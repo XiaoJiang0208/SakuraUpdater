@@ -1,8 +1,6 @@
 package fun.sakuraspark.sakurasync;
 
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.ForgeConfigSpec;
@@ -11,9 +9,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 

@@ -1,25 +1,21 @@
 package fun.sakuraspark.sakurasync;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 
 // An example config class. This is not required, but it's a good idea to have one to keep your config organized.
 // Demonstrates how to use Forge's config APIs
@@ -35,7 +31,11 @@ public class ConfigServer {
 
     // a list of strings that are treated as sync directories
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> SYNC_DIR = BUILDER
-            .comment("A list of sync directories, each entry should be in the format 'path:mode', e.g. 'mod:sync'")
+            .comment(
+                    "A list of sync directories, each entry should be in the format 'sourcepath:mode[:targetpath]', e.g. 'mod:mirror' or 'clientconfig:push:config'.\n"
+                            + "The 'sourcepath' is the source path of sync, and 'targetpath' is optional.\n"
+                            + "'mode' can be 'mirror' or 'push'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.\n"
+                            + "This is used to determine which directories to sync with the client.")
             .defineListAllowEmpty("SYNC_DIR", List.of(), ConfigServer::validateKeyMap);
     // static final ForgeConfigSpec for the server config
 
@@ -45,10 +45,20 @@ public class ConfigServer {
     public static Map<String, String> sync_map;
 
     private static boolean validateKeyMap(final Object obj) {
-        if (obj instanceof String path && path.split(":").length == 2) {
+        if (obj instanceof String path && path.split(":").length >= 2) {
+            if (path.split(":")[0] == null) {
+                LOGGER.warn("{} format error, sourcepath is missing. Please check the config file",
+                        (String) obj);
+                return false;
+            }
+            if (!"mirror".equals(path.split(":")[1]) || !"push".equals(path.split(":")[1])) {
+                LOGGER.warn("{} format error, mode should be 'mirror' or 'push'. Please check the config file",
+                        (String) obj);
+                return false;
+            }
             return true;
         }
-        LOGGER.warn("{} format error, should be 'path:mode', e.g. 'mod:sync'. Please check the config file",
+        LOGGER.warn("{} format error, should be 'sourcepath:mode[:targetpath]'. Please check the config file",
                 (String) obj);
         return false;
     }
@@ -71,8 +81,10 @@ public class ConfigServer {
                         .requires(source -> source.hasPermission(2)) // 2 = OP权限
                         .executes(ctx -> {
                             ctx.getSource().sendSuccess(
-                                    () -> net.minecraft.network.chat.Component.literal("SakuraSync 服务端配置已重载！"), true);
-                            onLoad(null); // 重新加载配置
+                                    () -> net.minecraft.network.chat.Component
+                                            .literal("SakuraSync server config reloaded!"),
+                                    true);
+                            onLoad(null); // reload config
                             return 1;
                         }));
     }

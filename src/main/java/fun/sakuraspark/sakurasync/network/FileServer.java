@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import io.netty.handler.logging.LoggingHandler;
 public class FileServer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private final int port;
-    private final List<String> fileDirectory;
     private Channel serverChannel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
@@ -41,45 +39,8 @@ public class FileServer {
     // 存储所有可用文件信息
     private final Map<String, File> availableFiles = new HashMap<>();
     
-    public FileServer(int port, List<String> fileDirectory) {
+    public FileServer(int port) {
         this.port = port;
-        this.fileDirectory = fileDirectory;
-        loadAvailableFiles();
-    }
-
-    /**
-     * 递归扫描目录中的所有文件
-     */
-    private void scanDirectory(File directory, String relativePath) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                String path = relativePath.isEmpty() ? file.getName() : relativePath + "/" + file.getName();
-                if (file.isDirectory()) {
-                    scanDirectory(file, path);
-                } else {
-                    // 处理文件
-                    availableFiles.put(path, file);
-                    LOGGER.debug("load mod file: " + path);
-                }
-            }
-        } else {
-            LOGGER.warn("Directory is empty or not accessible: " + directory.getAbsolutePath());
-        }
-    }
-
-    /**
-     * 加载文件目录中的所有文件
-     */
-    private void loadAvailableFiles() {
-        for (String dir : fileDirectory) {
-            File directory = new File(dir);
-            if (directory.exists() && directory.isDirectory()) {
-                scanDirectory(directory, "");
-            } else {
-                LOGGER.warn("Directory does not exist or is not a directory: " + dir);
-            }
-        }
     }
 
     /**
@@ -141,7 +102,7 @@ public class FileServer {
         protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws Exception {
             // 处理接收到的消息
             String request = new String(msg);
-            LOGGER.debug("收到请求: {}", request);
+            LOGGER.debug("get request: {}", request);
             
             // 处理不同类型的请求
             if (request.startsWith("LIST")) {
