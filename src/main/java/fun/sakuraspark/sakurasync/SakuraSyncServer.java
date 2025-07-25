@@ -14,6 +14,8 @@ import fun.sakuraspark.sakurasync.config.DataConfig.FileData;
 import fun.sakuraspark.sakurasync.network.FileServer;
 import fun.sakuraspark.sakurasync.utils.FileUtils;
 import fun.sakuraspark.sakurasync.utils.MD5;
+import static fun.sakuraspark.sakurasync.utils.CommandUtils.*;
+
 import net.minecraft.commands.CommandSourceStack;
 import static net.minecraft.commands.Commands.*;
 
@@ -27,6 +29,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 //@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraSync.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SakuraSyncServer {
@@ -35,13 +38,19 @@ public class SakuraSyncServer {
 
     private FileServer file_server;
 
+    public static SakuraSyncServer INSTANCE;
+
     SakuraSyncServer() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, DataConfig.SPEC);
+        INSTANCE = this;
         // fileServer = new FileServer(ConfigServer.SERVER_PORT.get(),
         // ConfigServer.SYNC_DIR.get());
     }
 
+    public static SakuraSyncServer getInstance() {
+        return INSTANCE;
+    }
 
     private List<FileData> getFileDataList() {
         List<FileData> fileDataList = new ArrayList<>();
@@ -69,22 +78,14 @@ public class SakuraSyncServer {
         return fileDataList;
     }
 
-    private void sendSuccessMessage(CommandSourceStack source, String message) {
-        source.sendSuccess(
-                () -> net.minecraft.network.chat.Component.literal(message),
-                true);
-    }
-
-    private void sendFailureMessage(CommandSourceStack source, String message) {
-        source.sendFailure(net.minecraft.network.chat.Component.literal(message));
-    }
-
-    @SubscribeEvent
-    public void onConfigLoaded(final ModConfigEvent.Loading event) {
-        if (event.getConfig().getSpec() != ServerConfig.SPEC) {
+    public void runServer() {
+        if(file_server != null) {
+            if (file_server.isRunning()) {
+                LOGGER.warn("SakuraSync Server is already running!");
+                return;
+            }
             return;
         }
-        ServerConfig.onLoad(event);
         file_server = new FileServer(ServerConfig.port);
         file_server.start();
         LOGGER.info("SakuraSync Server is running!");

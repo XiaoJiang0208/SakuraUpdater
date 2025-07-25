@@ -8,8 +8,10 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 
+import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
+import fun.sakuraspark.sakurasync.config.DataConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -35,6 +37,7 @@ public class FileServer {
     private Channel serverChannel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
+    private boolean isRunning = false;
 
     // 存储所有可用文件信息
     private final Map<String, File> availableFiles = new HashMap<>();
@@ -71,17 +74,24 @@ public class FileServer {
 
             ChannelFuture f = b.bind(port).sync();
             serverChannel = f.channel();
-            LOGGER.info("文件服务器已启动，监听端口: {}", port);
+            isRunning = true;
+            LOGGER.info("File server started on port: {}", port);
         } catch (InterruptedException e) {
+            shutdown();
             LOGGER.error("Failed to start file server", e);
             Thread.currentThread().interrupt();
         }
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     /**
      * 关闭文件服务器
      */
     public void shutdown() {
+        isRunning = false;
         if (serverChannel != null) {
             serverChannel.close();
         }
@@ -105,9 +115,9 @@ public class FileServer {
             LOGGER.debug("get request: {}", request);
             
             // 处理不同类型的请求
-            if (request.startsWith("LIST")) {
+            if (request.startsWith("GETUPDATELIST")) {
                 // 发送文件列表
-                sendFileList(ctx);
+                sendUpdateList(ctx);
             } else if (request.startsWith("GET:")) {
                 // 发送请求的文件
                 String fileName = request.substring(4);
@@ -131,15 +141,15 @@ public class FileServer {
         }
 
         /**
-         * 发送文件列表
-         */
-        private void sendFileList(ChannelHandlerContext ctx) {
-            StringBuilder sb = new StringBuilder("FILES:");
-            for (String fileName : availableFiles.keySet()) {
-                sb.append(fileName).append(",");
-            }
+         * 发送最新数据
+         */ 
+        private void sendUpdateList(ChannelHandlerContext ctx) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("UPDATELIST:");
+            sb.append(new Gson().toJson(DataConfig.getLastData()));
             ctx.writeAndFlush(sb.toString().getBytes());
         }
+        
 
         /**
          * 发送文件

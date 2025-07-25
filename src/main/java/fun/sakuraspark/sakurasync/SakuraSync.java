@@ -18,6 +18,9 @@ public class SakuraSync {
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    SakuraSyncServer serverInstance;
+    SakuraSyncClient clientInstance;
+
     public SakuraSync() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
@@ -29,12 +32,12 @@ public class SakuraSync {
 
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
             LOGGER.info("Try run SakuraSync Server");
-            SakuraSyncServer serverInstance = new SakuraSyncServer();
+            serverInstance = new SakuraSyncServer();
             MinecraftForge.EVENT_BUS.register(serverInstance);
         }
         if (FMLEnvironment.dist == Dist.CLIENT) {
             LOGGER.info("Try run SakuraSync Client");
-            SakuraSyncClient clientInstance = new SakuraSyncClient();
+            clientInstance = new SakuraSyncClient();
             MinecraftForge.EVENT_BUS.register(clientInstance);
         }
     }

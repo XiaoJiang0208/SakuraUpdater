@@ -8,10 +8,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.logging.LogUtils;
 
+import fun.sakuraspark.sakurasync.config.DataConfig.Data;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -36,10 +41,12 @@ public class FileClient {
     private Channel channel;
     private EventLoopGroup group;
     private FileClientHandler handler;
+    private boolean isConnected = false;
 
     public FileClient(String host, int port) {
         this.host = host;
         this.port = port;
+        this.handler = new FileClientHandler(); // 在构造函数中初始化
     }
 
     /**
@@ -68,6 +75,7 @@ public class FileClient {
             ChannelFuture f = b.connect(host, port).sync();
             channel = f.channel();
             LOGGER.info("已连接到文件服务器: {}:{}", host, port);
+            isConnected = true;
             return true;
         } catch (Exception e) {
             LOGGER.error("连接到文件服务器失败: {}:{}", host, port, e);
@@ -75,11 +83,16 @@ public class FileClient {
             return false;
         }
     }
+
+    public boolean isConnected() {
+        return isConnected;
+    }
     
     /**
      * 断开连接
      */
     public void disconnect() {
+        isConnected = false;
         if (channel != null) {
             channel.close();
         }
@@ -92,22 +105,23 @@ public class FileClient {
     /**
      * 获取可用文件列表
      */
-    public List<String> getFileList() {
+    @Nullable
+    public Data getUpdateList() {
         if (channel == null || !channel.isActive()) {
             LOGGER.error("未连接到文件服务器");
-            return new ArrayList<>();
+            return null;
         }
         
-        CompletableFuture<List<String>> future = new CompletableFuture<>();
-        handler.setFileListFuture(future);
+        CompletableFuture<Data> future = new CompletableFuture<>();
+        handler.setUpdateListFuture(future);
         
-        channel.writeAndFlush("LIST".getBytes());
+        channel.writeAndFlush("GETUPDATELIST".getBytes());
         
         try {
             return future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            LOGGER.error("获取文件列表失败", e);
-            return new ArrayList<>();
+            LOGGER.error("获取更新列表失败", e);
+            return null;
         }
     }
     
@@ -209,13 +223,13 @@ public class FileClient {
      * 文件客户端处理器
      */
     private static class FileClientHandler extends SimpleChannelInboundHandler<byte[]> {
-        private CompletableFuture<List<String>> fileListFuture;
+        private CompletableFuture<Data> updateListFuture;
         private CompletableFuture<byte[]> fileDownloadFuture;
         private CompletableFuture<Boolean> uploadFuture;
         private CountDownLatch uploadLatch;
-        
-        public void setFileListFuture(CompletableFuture<List<String>> future) {
-            this.fileListFuture = future;
+
+        public void setUpdateListFuture(CompletableFuture<Data> future) {
+            this.updateListFuture = future;
         }
         
         public void setFileDownloadFuture(CompletableFuture<byte[]> future) {
@@ -234,9 +248,9 @@ public class FileClient {
         protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws Exception {
             String response = new String(msg);
             
-            if (response.startsWith("FILES:")) {
+            if (response.startsWith("UPDATELIST:")) {
                 // 处理文件列表
-                handleFileList(response.substring(6));
+                handleUpdateList(response.substring(11));
             } else if (response.startsWith("FILE:")) {
                 // 处理文件下载
                 handleFileDownload(msg);
@@ -266,20 +280,18 @@ public class FileClient {
         /**
          * 处理文件列表响应
          */
-        private void handleFileList(String fileListStr) {
-            if (fileListFuture == null) return;
-            
-            List<String> fileList = new ArrayList<>();
-            if (!fileListStr.isEmpty()) {
-                String[] files = fileListStr.split(",");
-                for (String file : files) {
-                    if (!file.isEmpty()) {
-                        fileList.add(file);
-                    }
-                }
+        private void handleUpdateList(String fileListStr) {
+            if (updateListFuture == null) return;
+
+            Gson gson = new Gson();
+
+            try {
+                Data fileList = gson.fromJson(fileListStr, Data.class);
+                updateListFuture.complete(fileList);
+            } catch (JsonSyntaxException e) { //json格式不正确
+                LOGGER.error("{} server updatelist format error", e);
+                updateListFuture.complete(null);
             }
-            
-            fileListFuture.complete(fileList);
         }
         
         /**
@@ -317,8 +329,8 @@ public class FileClient {
             ctx.close();
             
             // 完成所有未完成的future
-            if (fileListFuture != null) {
-                fileListFuture.complete(new ArrayList<>());
+            if (updateListFuture != null) {
+                updateListFuture.complete(null);
             }
             if (fileDownloadFuture != null) {
                 fileDownloadFuture.complete(null);
