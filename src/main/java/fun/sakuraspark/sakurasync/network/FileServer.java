@@ -2,9 +2,11 @@ package fun.sakuraspark.sakurasync.network;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.RandomAccess;
 
 import org.slf4j.Logger;
 
@@ -12,13 +14,21 @@ import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
 import fun.sakuraspark.sakurasync.config.DataConfig;
+import fun.sakuraspark.sakurasync.config.DataConfig.FileData;
+
+import static fun.sakuraspark.sakurasync.network.MsgType.*;
+
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -26,10 +36,13 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.bytes.ByteArrayDecoder;
-import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedFile;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.CharsetUtil;
+
+
 
 public class FileServer {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -42,6 +55,7 @@ public class FileServer {
     // 存储所有可用文件信息
     private final Map<String, File> availableFiles = new HashMap<>();
     
+
     public FileServer(int port) {
         this.port = port;
     }
@@ -66,8 +80,7 @@ public class FileServer {
                         // 添加基于长度的解码器，处理分包问题
                         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
                         p.addLast(new LengthFieldPrepender(4));
-                        p.addLast(new ByteArrayDecoder());
-                        p.addLast(new ByteArrayEncoder());
+                        p.addLast(new ChunkedWriteHandler());
                         p.addLast(new FileServerHandler());
                     }
                 });
@@ -107,37 +120,45 @@ public class FileServer {
     /**
      * 文件服务器处理器
      */
-    private class FileServerHandler extends SimpleChannelInboundHandler<byte[]> {
+    private class FileServerHandler extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws Exception {
+        protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
             // 处理接收到的消息
-            String request = new String(msg);
-            LOGGER.debug("get request: {}", request);
-            
+            Byte request = msg.readByte();
+
             // 处理不同类型的请求
-            if (request.startsWith("GETUPDATELIST")) {
-                // 发送文件列表
-                sendUpdateList(ctx);
-            } else if (request.startsWith("GET:")) {
-                // 发送请求的文件
-                String fileName = request.substring(4);
-                sendFile(ctx, fileName);
-            } else if (request.startsWith("UPLOAD:")) {
-                // 准备接收上传的文件
-                // 解析文件名和文件大小
-                String[] parts = request.substring(7).split(":");
-                if (parts.length == 2) {
-                    String fileName = parts[0];
-                    // 文件上传准备
-                    ctx.writeAndFlush(("READY:" + fileName).getBytes());
-                }
-            } else if (request.startsWith("FILE:")) {
-                // 接收文件内容
-                String fileName = request.substring(5, request.indexOf(":DATA:"));
-                byte[] fileData = msg;
-                saveUploadedFile(fileName, fileData);
-                ctx.writeAndFlush("OK".getBytes());
+            switch (request) {
+                case MSG_TYPE_GET_UPDATE_LIST:
+                    sendUpdateList(ctx);
+                    break;
+                case MSG_TYPE_GET_FILE:
+                    sendFile(ctx, msg);
+                    break;
+                default:
+                    break;
             }
+            // if (msg.readByte() == MSG_TYPE_GET_UPDATE_LIST) {
+            //     // 发送文件列表
+            //     sendUpdateList(ctx);
+            // } else if (msg.readByte() == MSG_TYPE_GET_FILE) {
+            //     // 发送请求的文件
+            //     sendFile(ctx, msg);
+            // } else if (msg.readByte() == MSG_TYPE_UPLOAD_FILE) {
+            //     // 准备接收上传的文件
+            //     // 解析文件名和文件大小
+            //     String[] parts = request.substring(7).split(":");
+            //     if (parts.length == 2) {
+            //         String fileName = parts[0];
+            //         // 文件上传准备
+            //         ctx.writeAndFlush(("READY:" + fileName).getBytes());
+            //     }
+            // } else if (request.startsWith("FILE:")) {
+            //     // 接收文件内容
+            //     String fileName = request.substring(5, request.indexOf(":DATA:"));
+            //     byte[] fileData = msg;
+            //     saveUploadedFile(fileName, fileData);
+            //     ctx.writeAndFlush("OK".getBytes());
+            // }
         }
 
         /**
@@ -145,40 +166,94 @@ public class FileServer {
          */ 
         private void sendUpdateList(ChannelHandlerContext ctx) {
             StringBuilder sb = new StringBuilder();
-            sb.append("UPDATELIST:");
             sb.append(new Gson().toJson(DataConfig.getLastData()));
-            ctx.writeAndFlush(sb.toString().getBytes());
+            ByteBuf response = Unpooled.buffer(1);
+            response.writeByte(MSG_TYPE_UPDATE_LIST);
+            response.writeBytes(sb.toString().getBytes(CharsetUtil.UTF_8));
+            ctx.writeAndFlush(response);
         }
         
 
         /**
          * 发送文件
          */
-        private void sendFile(ChannelHandlerContext ctx, String fileName) {
-            File file = availableFiles.get(fileName);
+        private void sendFile(ChannelHandlerContext ctx, ByteBuf filePath) {
+            String file_name = filePath.toString(CharsetUtil.UTF_8);
+            boolean fileFound = false;
+            for (FileData fileData : DataConfig.getLastData().files) {
+                if (fileData.path.equals(file_name)) {
+                    fileFound = true;
+                    break;
+                }
+            }
+            if (!fileFound) {
+                // 发送错误响应
+                ByteBuf response = Unpooled.buffer();
+                response.writeByte(MSG_TYPE_FILE);
+                response.writeLong(-1); // 文件大小为-1表示错误
+                response.writeInt("File not found in list".getBytes(CharsetUtil.UTF_8).length);
+                response.writeBytes("File not found in list".getBytes(CharsetUtil.UTF_8));
+                ctx.writeAndFlush(response);
+                return;
+            }
+
+            File file = new File(file_name);
+
             if (file == null || !file.exists()) {
-                ctx.writeAndFlush(("ERROR:File not found: " + fileName).getBytes());
+                // 发送错误响应
+                ByteBuf response = Unpooled.buffer();
+                response.writeByte(MSG_TYPE_FILE);
+                response.writeLong(-1); // 文件大小为-1表示错误
+                response.writeInt("File not found in server".getBytes(CharsetUtil.UTF_8).length);
+                response.writeBytes("File not found in server".getBytes(CharsetUtil.UTF_8));
+                ctx.writeAndFlush(response);
+                LOGGER.warn("This file in list but not found in local: {}", file_name);
                 return;
             }
             
             try {
-                // 读取文件内容
-                byte[] fileContent = Files.readAllBytes(file.toPath());
+                RandomAccessFile raf = new RandomAccessFile(file, "r");
+                long file_length = raf.length();
+
+                // 1. 发送消息头 (类型, 文件名长度, 文件名, 文件内容长度)
+                ByteBuf header = Unpooled.buffer();
+                header.writeByte(MSG_TYPE_FILE);
+                header.writeLong(file_length);
+                header.writeInt(file.getName().getBytes(CharsetUtil.UTF_8).length);
+                header.writeBytes(file.getName().getBytes(CharsetUtil.UTF_8));
+                ctx.write(header); // 使用 write 而不是 writeAndFlush
                 
-                // 构建响应消息
-                String header = "FILE:" + fileName + ":SIZE:" + fileContent.length + ":DATA:";
-                byte[] headerBytes = header.getBytes();
+                // 2. 发送文件内容
+                // 使用 ChunkedFile 进行分块传输
+                ChannelFuture sendFileFuture = ctx.writeAndFlush(new ChunkedFile(raf, 0, file_length, 8192));
                 
-                // 发送文件内容
-                byte[] message = new byte[headerBytes.length + fileContent.length];
-                System.arraycopy(headerBytes, 0, message, 0, headerBytes.length);
-                System.arraycopy(fileContent, 0, message, headerBytes.length, fileContent.length);
-                
-                ctx.writeAndFlush(message);
-                LOGGER.info("已发送文件: {}, 大小: {} 字节", fileName, fileContent.length);
+                sendFileFuture.addListener((ChannelFutureListener) future -> {
+                    try {
+                        if (future.isSuccess()) {
+                            LOGGER.debug("Send file success: {}, size: {} byte", file_name, file_length);
+                        } else {
+                            LOGGER.error("Send file failed: {}", file_name, future.cause());
+                        }
+                    } finally {
+                        // ChunkedFile 会自动关闭 RandomAccessFile，但为了安全起见还是手动关闭
+                        try {
+                            if (raf.getChannel().isOpen()) {
+                                raf.close();
+                            }
+                        } catch (Exception e) {
+                            LOGGER.debug("Close file handle failed", e);
+                        }
+                    }
+                });
             } catch (Exception e) {
-                LOGGER.error("发送文件失败: {}", fileName, e);
-                ctx.writeAndFlush(("ERROR:" + e.getMessage()).getBytes());
+                LOGGER.error("Send file failed: {}", file_name, e);
+                // 发送错误响应
+                ByteBuf response = Unpooled.buffer();
+                response.writeByte(MSG_TYPE_FILE);
+                response.writeLong(-1); // 文件大小为-1表示错误
+                response.writeInt(file_name.getBytes(CharsetUtil.UTF_8).length);
+                response.writeBytes(file_name.getBytes(CharsetUtil.UTF_8));
+                ctx.writeAndFlush(response);
             }
         }
 

@@ -18,9 +18,6 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLanguageProvider;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 import static fun.sakuraspark.sakurasync.utils.CommandUtils.sendSuccessMessage;
 import static net.minecraft.commands.Commands.*;
@@ -40,6 +37,7 @@ public class SakuraSyncClient {
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
         INSTANCE = this;
         LOGGER.info("SakuraSync Client is running!");
+        LOGGER.debug("tttestttttttttttttttt");
     }
 
     //获取示例
@@ -57,6 +55,14 @@ public class SakuraSyncClient {
         LOGGER.info("Update list fetched successfully: {}", gson.toJson(last_update_data));
         return true;
     }
+
+    public void downloadUpdate() {
+        if (last_update_data == null || last_update_data.files.isEmpty()) {
+            LOGGER.warn("No updates available to download.");
+            return;
+        }
+        file_client.downloadFile(last_update_data.files.get(0).path, last_update_data.files.get(0).targetPath);
+    }
     
     public void connectToServer() {
         if(file_client != null) {
@@ -64,6 +70,8 @@ public class SakuraSyncClient {
                 LOGGER.warn("Already connected to the server.");
                 return;
             }
+            file_client.disconnect();
+            file_client.connect();
             return;
         }
         file_client = new FileClient(ClientConfig.host, ClientConfig.port);

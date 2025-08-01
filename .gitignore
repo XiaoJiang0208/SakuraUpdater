@@ -25,6 +25,7 @@ gradle
 # other
 eclipse
 run
+run-client
 runs
 run-data
 

@@ -28,6 +28,7 @@ public class TestScreen  extends Screen{
 
     public TestScreen() {
         super(title);
+        
     }
     
     @Override
@@ -45,9 +46,15 @@ public class TestScreen  extends Screen{
         // this.addRenderableWidget(Button.builder(Component.translatable("pushGuiLayer"), (button) -> {
         //     Minecraft.getInstance().pushGuiLayer(new TestScreen());
         // }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraspark.screen.testscreen.connet"), (button) -> {
+            SakuraSyncClient.getInstance().connectToServer();
+        }).bounds(this.width / 2 - 100, this.height / 2 - 20, 200, 20).build());
         this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraspark.screen.testscreen.getupdatelist"), (button) -> {
             SakuraSyncClient.getInstance().updateCheck();
         }).bounds(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraspark.screen.testscreen.downloadupdate"), (button) -> {
+            SakuraSyncClient.getInstance().downloadUpdate();
+        }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
     }
 
     @Override
