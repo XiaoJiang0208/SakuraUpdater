@@ -1,4 +1,4 @@
-package fun.sakuraspark.sakurasync.utils;
+package fun.sakuraspark.sakuraupdater.utils;
 
 import net.minecraft.commands.CommandSourceStack;
 

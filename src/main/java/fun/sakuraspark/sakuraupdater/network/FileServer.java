@@ -1,4 +1,6 @@
-package fun.sakuraspark.sakurasync.network;
+package fun.sakuraspark.sakuraupdater.network;
+
+import static fun.sakuraspark.sakuraupdater.network.MsgType.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -13,11 +15,9 @@ import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
-import fun.sakuraspark.sakurasync.config.DataConfig;
-import fun.sakuraspark.sakurasync.config.DataConfig.FileData;
-
-import static fun.sakuraspark.sakurasync.network.MsgType.*;
-
+import fun.sakuraspark.sakuraupdater.config.DataConfig;
+import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
+import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -180,12 +180,19 @@ public class FileServer {
         private void sendFile(ChannelHandlerContext ctx, ByteBuf filePath) {
             String file_name = filePath.toString(CharsetUtil.UTF_8);
             boolean fileFound = false;
-            for (FileData fileData : DataConfig.getLastData().files) {
-                if (fileData.path.equals(file_name)) {
-                    fileFound = true;
+            for (PathData pathData : DataConfig.getLastData().paths) {
+                for (FileData fileData : pathData.files) {
+                    // 检查文件名是否匹配
+                    if (fileData.sourcePath.equals(file_name)) {
+                        fileFound = true;
+                        break;
+                    }
+                }
+                if (fileFound) {
                     break;
                 }
             }
+            
             if (!fileFound) {
                 // 发送错误响应
                 ByteBuf response = Unpooled.buffer();

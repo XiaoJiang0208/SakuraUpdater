@@ -1,0 +1,9 @@
+{
+  "mod.sakuraupdater.description": "Update mods for your server players like any other game.",
+  "gui.sakuraupdater.UpdateCheckScreen": "Checking for updates...",
+  "gui.sakuraupdater.UpdateCheckScreen.NeedUpdate": "Update available",
+  "gui.sakuraupdater.UpdateCheckScreen.NoUpdate": "You are on the latest version",
+  "gui.sakuraupdater.UpdateCheckScreen.Error": "Failed to get updates from the server",
+  "gui.sakuraupdater.UpdateCheckScreen.update": "Update now!",
+  "gui.sakuraupdater.UpdateCheckScreen.cancel": "Cancel"
+}

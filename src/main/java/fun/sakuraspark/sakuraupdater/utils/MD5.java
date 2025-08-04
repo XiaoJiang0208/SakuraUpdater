@@ -1,4 +1,4 @@
-package fun.sakuraspark.sakurasync.utils;
+package fun.sakuraspark.sakuraupdater.utils;
 
 public class MD5 {
     // MD5计算方法

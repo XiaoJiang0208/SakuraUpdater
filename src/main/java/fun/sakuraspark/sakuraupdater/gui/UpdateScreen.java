@@ -1,4 +1,4 @@
-package fun.sakuraspark.sakurasync.gui;
+package fun.sakuraspark.sakuraupdater.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 public class UpdateScreen extends Screen {
 
     public UpdateScreen() {
-        super(Component.translatable("gui.sakurasync.screen.UpdateChecking"));
+        super(Component.translatable("gui.sakuraupdater.screen.UpdateScreen"));
     }
 
     @Override

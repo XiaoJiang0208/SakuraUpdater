@@ -1,21 +1,23 @@
-package fun.sakuraspark.sakurasync;
+package fun.sakuraspark.sakuraupdater;
 
 import org.slf4j.Logger;
 
+import com.ibm.icu.impl.Pair;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.*;
+import static fun.sakuraspark.sakuraupdater.utils.CommandUtils.*;
+
 import com.mojang.logging.LogUtils;
 
-import fun.sakuraspark.sakurasync.config.DataConfig;
-import fun.sakuraspark.sakurasync.config.ServerConfig;
-import fun.sakuraspark.sakurasync.config.DataConfig.FileData;
-import fun.sakuraspark.sakurasync.network.FileServer;
-import fun.sakuraspark.sakurasync.utils.FileUtils;
-import fun.sakuraspark.sakurasync.utils.MD5;
-import static fun.sakuraspark.sakurasync.utils.CommandUtils.*;
-
+import fun.sakuraspark.sakuraupdater.config.DataConfig;
+import fun.sakuraspark.sakuraupdater.config.ServerConfig;
+import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
+import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
+import fun.sakuraspark.sakuraupdater.network.FileServer;
+import fun.sakuraspark.sakuraupdater.utils.FileUtils;
+import fun.sakuraspark.sakuraupdater.utils.MD5;
 import net.minecraft.commands.CommandSourceStack;
 import static net.minecraft.commands.Commands.*;
 
@@ -31,16 +33,16 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
-//@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraSync.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class SakuraSyncServer {
+//@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraUpdater.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public class SakuraUpdaterServer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private FileServer file_server;
 
-    public static SakuraSyncServer INSTANCE;
+    public static SakuraUpdaterServer INSTANCE;
 
-    SakuraSyncServer() {
+    SakuraUpdaterServer() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, DataConfig.SPEC);
         INSTANCE = this;
@@ -48,54 +50,60 @@ public class SakuraSyncServer {
         // ConfigServer.SYNC_DIR.get());
     }
 
-    public static SakuraSyncServer getInstance() {
+    public static SakuraUpdaterServer getInstance() {
         return INSTANCE;
     }
 
-    private List<FileData> getFileDataList() {
-        List<FileData> fileDataList = new ArrayList<>();
+    private List<PathData> getPathDataList() {
+        List<PathData> pathDataList = new ArrayList<>();
         for (String syncDir : ServerConfig.getSyncDirs()) {
-            String[] parts = syncDir.split(":");
-            if (parts.length < 2) {
+            List<String> parts = List.of(syncDir.split(":"));
+            if (parts.size() < 2) {
                 LOGGER.warn("Invalid sync directory format: {}", syncDir);
                 continue;
             }
-            String sourcePath = parts[0].trim();
-            String model = parts[1].trim();
-            String targetPath = parts.length > 2 ? parts[2].trim() : sourcePath;
-            LOGGER.debug("now scan {}", new File(sourcePath).getAbsolutePath());
-            FileUtils.getAllFiles(new File(sourcePath)).forEach(file -> {
-                FileData data = new FileData();
-                // 获取相对路径
-                data.path = file.toString();
-                data.model = model;
-                data.targetPath = targetPath + File.separator + file.getName();
-                data.md5 = MD5.calculateMD5(file);
-                fileDataList.add(data);
-            });
+            String targetPath = parts.get(0).trim();
+            String model = parts.get(1).trim();
+            List<String> sourcePath = parts.size() > 2 ? parts.subList(2, parts.size()) : List.of(targetPath);
+            PathData data = new PathData();
+            data.model = model;
+            data.targetPath = targetPath;
+            data.files = new ArrayList<>();
+            for (String source : sourcePath) {
+                LOGGER.debug("now scan {}", new File(source));
+                FileUtils.getAllFiles(new File(source)).forEach(file -> {
+                    FileData fileData = new FileData();
+                    fileData.sourcePath = file.toString();
+                    fileData.targetPath = file.toString().replace(source, targetPath);
+                    fileData.md5 = MD5.calculateMD5(file);
+                    data.files.add(fileData);
+
+                });
+            }
+            pathDataList.add(data);
 
         }
-        return fileDataList;
+        return pathDataList;
     }
 
     public void runServer() {
         if(file_server != null) {
             if (file_server.isRunning()) {
-                LOGGER.warn("SakuraSync Server is already running!");
+                LOGGER.warn("SakuraUpdater Server is already running!");
                 return;
             }
             return;
         }
         file_server = new FileServer(ServerConfig.port);
         file_server.start();
-        LOGGER.info("SakuraSync Server is running!");
+        LOGGER.info("SakuraUpdater Server is running!");
     }
 
     // Register commands for the server
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
-                literal("ssync")
+                literal("sakuraupdater")
                         .then(createReloadCommand())
                         .then(createDataCommand())
                         .then(createCommitCommand()));
@@ -123,7 +131,7 @@ public class SakuraSyncServer {
                 .requires(source -> source.hasPermission(2))
                 .executes(context -> {
                     ServerConfig.onLoad(null);
-                    sendSuccessMessage(context.getSource(), "SakuraSync server config reloaded!");
+                    sendSuccessMessage(context.getSource(), "SakuraUpdater server config reloaded!");
                     return 1;
                 });
     }
@@ -159,7 +167,7 @@ public class SakuraSyncServer {
                                         return 0; // 如果编辑失败，返回0
                                     }
                                     sendSuccessMessage(context.getSource(),
-                                            "SakuraSync server data edit completed!");
+                                            "SakuraUpdater server data edit completed!");
                                     return 1;
                                 })));
     }
@@ -175,7 +183,7 @@ public class SakuraSyncServer {
     }
 
     private String buildDataListString() {
-        StringBuilder dataList = new StringBuilder("SakuraSync server data:\n");
+        StringBuilder dataList = new StringBuilder("SakuraUpdater server data:\n");
         DataConfig.datalist.forEach(data -> dataList.append(data.version)
                 .append(" - ")
                 .append(data.time)
@@ -198,17 +206,23 @@ public class SakuraSyncServer {
                                         "Data with version " + version + " not found.");
                                 return 0; // 如果未找到数据，返回0
                             }
-                            StringBuilder dataList = new StringBuilder("SakuraSync server data:\n");
+                            StringBuilder dataList = new StringBuilder("SakuraUpdater server data:\n");
 
-                            for (FileData file : data.files) {
-                                dataList.append(file.path)
+                            for (PathData path : data.paths) {
+                                dataList.append(path.targetPath)
                                         .append(" - ")
-                                        .append(file.model)
-                                        .append(" - ")
-                                        .append(file.targetPath)
-                                        .append(" - ")
-                                        .append(file.md5)
-                                        .append("\n");
+                                        .append(path.model)
+                                        .append(":[");
+                                for (FileData file : path.files) {
+                                    dataList.append(" (")
+                                            .append(file.targetPath)
+                                            .append(", ")
+                                            .append(file.sourcePath)
+                                            .append(", ")
+                                            .append(file.md5)
+                                            .append("), ");
+                                }
+                                dataList.append("]\n");
                             }
                             String datastring = dataList.toString();
                             if (datastring == null) {
@@ -228,7 +242,7 @@ public class SakuraSyncServer {
                             String version = getString(context, "version");
                             DataConfig.removeData(version);
                             sendSuccessMessage(context.getSource(),
-                                    "SakuraSync server data deleted!");
+                                    "SakuraUpdater server data deleted!");
                             return 1;
                         }));
     }
@@ -238,7 +252,7 @@ public class SakuraSyncServer {
         return literal("clear")
                 .executes(context -> {
                     DataConfig.clearData();
-                    sendSuccessMessage(context.getSource(), "SakuraSync server data cleared!");
+                    sendSuccessMessage(context.getSource(), "SakuraUpdater server data cleared!");
                     return 1;
                 });
     }
@@ -256,22 +270,22 @@ public class SakuraSyncServer {
                                     String timestamp = java.time.LocalDateTime.now()
                                             .format(DateTimeFormatter
                                                     .ofPattern("yyyy-MM-dd_HH:mm:ss"));
-                                    List<FileData> dd;
+                                    List<PathData> path_data;
                                     try {
-                                        dd = getFileDataList();
+                                        path_data = getPathDataList();
                                     } catch (Exception e) {
                                         sendFailureMessage(context.getSource(),
                                                 "Failed to get file data: " + e.getMessage());
                                         return 0; // 如果获取文件数据失败，返回0
                                     }
 
-                                    if (!DataConfig.addData(version, timestamp, description, dd)) {
+                                    if (!DataConfig.addData(version, timestamp, description, path_data)) {
                                         sendFailureMessage(context.getSource(),
                                                 "Failed to add commit: Version already exists or invalid data.");
                                         return 0; // 如果添加失败，返回0
                                     }
                                     sendSuccessMessage(context.getSource(),
-                                            "SakuraSync server commit added!");
+                                            "SakuraUpdater server commit added!");
                                     return 1;
                                 })));
     }

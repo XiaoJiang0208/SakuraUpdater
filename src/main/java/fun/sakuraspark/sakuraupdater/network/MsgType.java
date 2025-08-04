@@ -1,4 +1,4 @@
-package fun.sakuraspark.sakurasync.network;
+package fun.sakuraspark.sakuraupdater.network;
 
 public class MsgType {
     
