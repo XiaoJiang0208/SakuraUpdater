@@ -13,7 +13,7 @@ out
 *.iml
 .idea
 .vscode
-config
+/config
 logs
 
 
@@ -22,11 +22,11 @@ build
 .gradle
 
 # other
-eclipse
-run
-run-client
-runs
-run-data
+/eclipse
+/run
+/run-client
+/runs
+/run-data
 
 repo
 .VSCodeCounter
