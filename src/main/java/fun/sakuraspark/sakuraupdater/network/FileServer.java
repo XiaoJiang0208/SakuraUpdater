@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
 import fun.sakuraspark.sakuraupdater.config.DataConfig;
+import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
 import io.netty.bootstrap.ServerBootstrap;
@@ -166,7 +167,12 @@ public class FileServer {
          */ 
         private void sendUpdateList(ChannelHandlerContext ctx) {
             StringBuilder sb = new StringBuilder();
-            sb.append(new Gson().toJson(DataConfig.getLastData()));
+            Data data = DataConfig.getLastData();
+            if (data == null) {
+                sb.append("{}");
+            } else {
+                sb.append(new Gson().toJson(data));
+            }
             ByteBuf response = Unpooled.buffer(1);
             response.writeByte(MSG_TYPE_UPDATE_LIST);
             response.writeBytes(sb.toString().getBytes(CharsetUtil.UTF_8));

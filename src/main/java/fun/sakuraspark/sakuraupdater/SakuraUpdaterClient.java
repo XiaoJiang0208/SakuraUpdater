@@ -12,6 +12,7 @@ import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
 import fun.sakuraspark.sakuraupdater.gui.TestScreen;
+import fun.sakuraspark.sakuraupdater.gui.UpdateCheckScreen;
 import fun.sakuraspark.sakuraupdater.gui.UpdateScreen;
 import fun.sakuraspark.sakuraupdater.network.FileClient;
 import fun.sakuraspark.sakuraupdater.utils.FileUtils;
@@ -39,7 +40,7 @@ public class SakuraUpdaterClient {
     private Data last_update_data = null; // 上次更新的数据
 
     private boolean need_show = true;
-    private boolean debug = true; // 是否开启调试模式
+    private boolean debug = false; // 是否开启调试模式
 
     SakuraUpdaterClient() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
@@ -147,7 +148,7 @@ public class SakuraUpdaterClient {
             // event.setNewScreen(new TestScreen());
             event.setNewScreen(new TestScreen());
         } else {
-            event.setNewScreen(new UpdateScreen());
+            event.setNewScreen(new UpdateCheckScreen());
         }
     }
 

@@ -26,3 +26,12 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SakuraCore-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            build/devlibs/*.jar
+          retention-days: 30

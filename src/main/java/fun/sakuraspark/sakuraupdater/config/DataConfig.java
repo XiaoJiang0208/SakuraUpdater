@@ -148,6 +148,7 @@ public class DataConfig {
 
     public static Data getLastData() {
         if (datalist.isEmpty()) {
+            LOGGER.warn("No data available. you need to commit your first update.");
             return null; // 如果列表为空，返回null
         }
         return datalist.get(0); // 返回列表中的第一个元素
