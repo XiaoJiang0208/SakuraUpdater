@@ -13,7 +13,6 @@ import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
 import fun.sakuraspark.sakuraupdater.gui.TestScreen;
 import fun.sakuraspark.sakuraupdater.gui.UpdateCheckScreen;
-import fun.sakuraspark.sakuraupdater.gui.UpdateScreen;
 import fun.sakuraspark.sakuraupdater.network.FileClient;
 import fun.sakuraspark.sakuraupdater.utils.FileUtils;
 import fun.sakuraspark.sakuraupdater.utils.MD5;
@@ -38,6 +37,10 @@ public class SakuraUpdaterClient {
 
     private FileClient file_client;
     private Data last_update_data = null; // 上次更新的数据
+
+    private Pair<Integer, Integer> update_progress = new Pair<>(-1, -1); // 更新进度
+    private int download_failures = 0; // 更新失败次数
+    Pair<List<File>, List<FileData>> integrityCheckResult;
 
     private boolean need_show = true;
     private boolean debug = false; // 是否开启调试模式
@@ -78,14 +81,14 @@ public class SakuraUpdaterClient {
         return 1;
     }
 
-    public Pair<List<File>, List<FileData>> integrityCheck() {
+    public boolean integrityCheck() {
+        update_progress = new Pair<>(-1, -1); // 重置进度
+        integrityCheckResult = new Pair<List<File>, List<FileData>>(new ArrayList<>(), new ArrayList<>());
         if (getLastUpdateData() == null) {
-            return null;
+            return false;
         }
         Gson gson = new Gson();
         LOGGER.info("Update list fetched successfully: {}", gson.toJson(last_update_data));
-        Pair<List<File>, List<FileData>> remove_and_download = new Pair<List<File>, List<FileData>>(new ArrayList<>(),
-                new ArrayList<>());
         for (PathData pathData : last_update_data.paths) {
             // 格式错误
             if (!pathData.model.equals("mirror") && !pathData.model.equals("push")) {
@@ -95,31 +98,66 @@ public class SakuraUpdaterClient {
             // mirror需要删除
             if (pathData.model.equals("mirror")) {
                 FileUtils.getAllFiles(new File(pathData.targetPath)).forEach(file -> {
-                    if (!pathData.files.stream().anyMatch(fileData -> fileData.md5.equals(MD5.calculateMD5(file)))) {
+                    if (!pathData.files.stream().anyMatch(fileData -> file.toString().equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file)))) { // 对比md5
                         LOGGER.warn("File {} will be deleted.", file.getName());
-                        remove_and_download.getFirst().add(file);
+                        integrityCheckResult.getFirst().add(file);
                     }
                 });
             }
+            // 需要下载
             pathData.files.forEach(fileData -> {
                 if (!FileUtils.getAllFiles(new File(pathData.targetPath)).stream()
-                        .anyMatch(file -> MD5.calculateMD5(file).equals(fileData.md5))) {
-                    LOGGER.warn("File {} will be downloaded.", fileData.sourcePath);
-                    remove_and_download.getSecond().add(fileData);
+                        .anyMatch(file -> file.toString().equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file)))) { // 判断是否存在和对比md5
+                    LOGGER.warn("File {} will be downloaded to {}", fileData.sourcePath+":"+fileData.md5, MD5.calculateMD5(fileData.targetPath));
+                    integrityCheckResult.getSecond().add(fileData);
                 }
             });
         }
-        return remove_and_download;
+        
+        download_failures = 0; // 重置失败次数
+        if (integrityCheckResult.getFirst().isEmpty() && integrityCheckResult.getSecond().isEmpty()) {
+            LOGGER.info("No files to remove or download.");
+            update_progress = new Pair<>(0, 0);
+            return false;
+        }
+
+        update_progress = new Pair<>(0, integrityCheckResult.getFirst().size()+integrityCheckResult.getSecond().size()); // 更新进度
+        return true;
     }
 
     public void downloadUpdate() {
-        if (last_update_data == null || last_update_data.paths.isEmpty()
-                || last_update_data.paths.get(0).files.isEmpty()) {
-            LOGGER.warn("No updates available to download.");
-            return;
+        // 删除不需要的文件
+        integrityCheckResult.getFirst().forEach(file -> {
+            if (file.delete()) {
+                LOGGER.info("Deleted file: {}", file);
+                update_progress = new Pair<>(update_progress.getFirst() + 1, update_progress.getSecond());
+            } else {
+                LOGGER.error("Failed to delete file: {}", file);
+            }
+        });
+
+        // 下载需要的文件
+        integrityCheckResult.getSecond().forEach(fileData -> {
+            if (file_client.downloadFile(fileData.sourcePath, fileData.targetPath)) {
+                LOGGER.info("Downloaded file: {}", fileData.sourcePath);
+            } else {
+                download_failures++;
+                LOGGER.error("Failed to download file: {}", fileData.sourcePath);
+            }
+            update_progress = new Pair<>(update_progress.getFirst() + 1, update_progress.getSecond());
+        });
+        if (download_failures == 0) {
+            LOGGER.info("All files downloaded successfully.");
+            ClientConfig.setNowVersion(last_update_data.version);
         }
-        file_client.downloadFile(last_update_data.paths.get(0).files.get(0).sourcePath,
-                last_update_data.paths.get(0).files.get(0).targetPath);
+    }
+
+    public Pair<Integer, Integer> getUpdateProgress() {
+        return update_progress;
+    }
+
+    public int getDownloadFailures() {
+        return download_failures;
     }
 
     public void connectToServer() {

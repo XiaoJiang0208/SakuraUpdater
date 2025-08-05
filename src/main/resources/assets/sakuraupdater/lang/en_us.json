@@ -6,5 +6,13 @@
   "gui.sakuraupdater.UpdateCheckScreen.Error": "Failed to get updates from the server",
   "gui.sakuraupdater.UpdateCheckScreen.update": "Update now!",
   "gui.sakuraupdater.UpdateCheckScreen.ok": "OK",
-  "gui.sakuraupdater.UpdateCheckScreen.cancel": "Cancel"
+  "gui.sakuraupdater.UpdateCheckScreen.cancel": "Cancel",
+  "gui.sakuraupdater.UpdateCheckScreen.retry": "Retry",
+  "gui.sakuraupdater.UpdateScreen": "Updating...",
+  "gui.sakuraupdater.UpdateScreen.complete": "Complete",
+  "gui.sakuraupdater.UpdateScreen.failed": "but %d files could not be downloaded",
+  "gui.sakuraupdater.UpdateScreen.cancel": "Cancel",
+  "gui.sakuraupdater.UpdateScreen.retry": "Retry",
+  "gui.sakuraupdater.UpdateScreen.restartnow": "Restart now to apply updates",
+  "gui.sakuraupdater.UpdateScreen.restartlater": "Restart later"
 }

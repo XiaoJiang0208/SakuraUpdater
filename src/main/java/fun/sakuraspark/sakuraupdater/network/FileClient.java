@@ -153,7 +153,7 @@ public class FileClient {
         channel.writeAndFlush(buf);
 
         try {
-            boolean fileData = future.get(60, TimeUnit.SECONDS);
+            boolean fileData = future.get(120, TimeUnit.SECONDS);
             if (!fileData) {
                 LOGGER.error("下载文件失败: {}", fileName);
                 return false;
@@ -195,6 +195,7 @@ public class FileClient {
             this.saveDirectory = saveDirectory;
             this.fileChannel = null; // 重置文件通道
             this.fileOutputStream = null; // 重置文件输出流
+            this.receivedBytes = 0; // 重置已接收字节数
         }
         
         @Override
@@ -278,6 +279,7 @@ public class FileClient {
                 int readableBytes = msg.readableBytes();
                 ByteBuffer buffer = ByteBuffer.allocate(readableBytes);
                 msg.readBytes(buffer);
+                buffer.flip(); // 切换到读模式
                 fileChannel.write(buffer); // 写入文件通道
                 receivedBytes += readableBytes; // 更新已接收字节数
                 if (receivedBytes >= fileLength) {

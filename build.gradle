@@ -20,10 +20,6 @@ group = mod_group_id
 repositories {
     mavenCentral()
     maven {
-        name = "GitHubPackages"
-        url = "https://maven.pkg.github.com/XiaoJiang0208/SakuraCore"
-    }
-    maven {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
     }

@@ -22,7 +22,7 @@ public class ClientConfig {
 	private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
 	
-	public static final ForgeConfigSpec.ConfigValue<String> HOST = BUILDER
+	private static final ForgeConfigSpec.ConfigValue<String> HOST = BUILDER
 			.comment("The host of the file server, default is 'localhost'.")
 			.define("host", "localhost");
 
@@ -48,5 +48,9 @@ public class ClientConfig {
 
 	public static String getNowVersion() {
 		return now_version.get();
+	}
+
+	public static void setNowVersion(String version) {
+		now_version.set(version);
 	}
 }
