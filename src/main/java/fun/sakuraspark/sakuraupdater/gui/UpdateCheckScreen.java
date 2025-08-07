@@ -19,11 +19,12 @@ import net.minecraft.util.Mth;
 
 public class UpdateCheckScreen extends Screen {
 
-    public static final CubeMap CUBE_MAP = new CubeMap(new ResourceLocation("textures/gui/title/background/panorama"));
+    // public static final CubeMap CUBE_MAP = new CubeMap(new
+    // ResourceLocation("textures/gui/title/background/panorama"));
 
-    private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
-    private boolean fading = true;
-    private long fadeInStart;
+    // private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
+    // private boolean fading = true;
+    // private long fadeInStart;
 
     private int updateStatus = 0; // -1: error, 0: checking, 1: need update, 2: no update 3: only server update
 
@@ -102,20 +103,21 @@ public class UpdateCheckScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // 渲染背景
-        if (this.fadeInStart == 0L && this.fading) {
-            this.fadeInStart = Util.getMillis();
-        }
-        float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
-        this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
-        guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
+        // // 渲染背景
+        // if (this.fadeInStart == 0L && this.fading) {
+        //     this.fadeInStart = Util.getMillis();
+        // }
+        // float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
+        // this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
+        // guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         if (updateStatus == 0) {
             guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
         } else if (updateStatus == 1 || updateStatus == 3) {
             guiGraphics.drawCenteredString(this.font,
                     Component.literal(SakuraUpdaterClient.getInstance().getLastUpdateData().version), this.width / 2,
-                     30, 16711680); // Red color for need update
+                    30, 16711680); // Red color for need update
         } else if (updateStatus == 2) {
             guiGraphics.drawCenteredString(this.font,
                     Component.translatable("gui.sakuraupdater.UpdateCheckScreen.NoUpdate"), this.width / 2,
@@ -126,6 +128,5 @@ public class UpdateCheckScreen extends Screen {
                     this.height / 2, 16711680); // Red color for error
 
         }
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 }

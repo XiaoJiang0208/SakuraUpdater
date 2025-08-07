@@ -17,11 +17,11 @@ import fun.sakuraspark.sakuraupdater.network.FileClient;
 import fun.sakuraspark.sakuraupdater.utils.FileUtils;
 import fun.sakuraspark.sakuraupdater.utils.MD5;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
 
 import static fun.sakuraspark.sakuraupdater.utils.CommandUtils.sendSuccessMessage;
 import static net.minecraft.commands.Commands.*;
@@ -46,7 +46,7 @@ public class SakuraUpdaterClient {
     private boolean debug = false; // 是否开启调试模式
 
     SakuraUpdaterClient() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
+        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
         INSTANCE = this;
         LOGGER.info("SakuraUpdater Client is running!");
     }
@@ -118,6 +118,7 @@ public class SakuraUpdaterClient {
         if (integrityCheckResult.getFirst().isEmpty() && integrityCheckResult.getSecond().isEmpty()) {
             LOGGER.info("No files to remove or download.");
             update_progress = new Pair<>(0, 0);
+            ClientConfig.setNowVersion(last_update_data.version); // 不需要更新文件但是还是需要更新本地版本号
             return false;
         }
 

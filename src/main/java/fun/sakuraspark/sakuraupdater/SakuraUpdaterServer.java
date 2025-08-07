@@ -26,12 +26,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.javafmlmod.FMLModContainer;
 
 //@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraUpdater.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SakuraUpdaterServer {
@@ -43,8 +43,8 @@ public class SakuraUpdaterServer {
     public static SakuraUpdaterServer INSTANCE;
 
     SakuraUpdaterServer() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, DataConfig.SPEC);
+        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
+        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.SERVER, DataConfig.SPEC);
         INSTANCE = this;
         // fileServer = new FileServer(ConfigServer.SERVER_PORT.get(),
         // ConfigServer.SYNC_DIR.get());

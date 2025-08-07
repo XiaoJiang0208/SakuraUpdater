@@ -1,10 +1,11 @@
 package fun.sakuraspark.sakuraupdater.config;
 
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.bus.api.SubscribeEvent;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import com.mojang.logging.LogUtils;
 
 import fun.sakuraspark.sakuraupdater.SakuraUpdater;
 
-@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraUpdater.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraUpdater.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class DataConfig {
     public static class Data {
         public String version;
@@ -39,12 +40,12 @@ public class DataConfig {
         public String md5; // 文件MD5
     }
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DATA = BUILDER
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> DATA = BUILDER
             .comment("The last update time of the server, used for synchronization. Don't change this unless you know what you're doing.")
             .defineListAllowEmpty("DATA", List.of(), DataConfig::validateKeyMap);
 
-    public static final ForgeConfigSpec SPEC = BUILDER.build();
+    public static final ModConfigSpec SPEC = BUILDER.build();
 
     public static List<Data> datalist = new ArrayList<>();
 
@@ -91,6 +92,7 @@ public class DataConfig {
             data.paths = files != null ? files : new ArrayList<>(); // 如果files为null，初始化为空列表
             datalist.add(0, data); // 添加到列表的开头
             DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+            SPEC.save();
             
             LOGGER.debug("Added new data: {}", data);
             return true; // 如果转换成功，返回true
@@ -107,6 +109,7 @@ public class DataConfig {
                 data.description = description;
                 data.paths = files != null ? files : data.paths; // 如果files为null，使用原始文件列表
                 DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+                SPEC.save();
                 LOGGER.debug("Edited data: {}", data);
                 return true; // 如果找到并编辑成功，返回true
             }
@@ -118,18 +121,21 @@ public class DataConfig {
     public static void clearData() {
         datalist.clear();
         DATA.set(List.of());
+        SPEC.save();
         LOGGER.debug("Cleared all data.");
     }
 
     public static void removeData(String version) {
         datalist.removeIf(data -> data.version.equals(version)); // 根据版本号删除数据
         DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+        SPEC.save();
         LOGGER.debug("Removed data with version: {}", version);
     }
     public static void removeLastData() {
         if (!datalist.isEmpty()) {
             Data removedData = datalist.remove(0); // 删除列表中的第一个元素
             DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+            SPEC.save();
             LOGGER.debug("Removed last data: {}", removedData);
         } else {
             LOGGER.warn("No data to remove.");

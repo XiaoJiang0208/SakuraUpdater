@@ -18,11 +18,11 @@ import net.minecraft.world.entity.vehicle.Minecart;
 
 public class TestScreen extends Screen {
 
-    public static final CubeMap CUBE_MAP = new CubeMap(new ResourceLocation("textures/gui/title/background/panorama"));
+    // public static final CubeMap CUBE_MAP = new CubeMap(new ResourceLocation("textures/gui/title/background/panorama"));
 
-    private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
-    private boolean fading = true;
-    private long fadeInStart;
+    // private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
+    // private boolean fading = true;
+    // private long fadeInStart;
     private static Component title = Component.translatable("gui.sakuraspark.screen.TestScreen");
 
     public TestScreen() {
@@ -37,7 +37,6 @@ public class TestScreen extends Screen {
 
     @Override
     public void init() {
-        // TODO Auto-generated method stub
         super.init();
         // this.addRenderableWidget(Button.builder(Component.translatable("setScreen"),
         // (button) -> {
@@ -63,15 +62,15 @@ public class TestScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (this.fadeInStart == 0L && this.fading) {
-            this.fadeInStart = Util.getMillis();
-        }
-
-        float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
-        this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
-        guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        // if (this.fadeInStart == 0L && this.fading) {
+        //     this.fadeInStart = Util.getMillis();
+        // }
+
+        // float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
+        // this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
+        // guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
+        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
     }
 
     // @Override

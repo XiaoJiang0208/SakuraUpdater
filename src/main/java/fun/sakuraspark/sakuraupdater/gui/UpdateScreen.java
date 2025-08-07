@@ -17,11 +17,11 @@ import net.minecraft.util.Mth;
 
 public class UpdateScreen extends Screen {
 
-    public static final CubeMap CUBE_MAP = new CubeMap(new ResourceLocation("textures/gui/title/background/panorama"));
+    // public static final CubeMap CUBE_MAP = new CubeMap(new ResourceLocation("textures/gui/title/background/panorama"));
 
-    private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
-    private boolean fading = true;
-    private long fadeInStart;
+    // private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
+    // private boolean fading = true;
+    // private long fadeInStart;
 
     // 缓动控制
     private float currentProgress = 0.0f;
@@ -98,13 +98,14 @@ public class UpdateScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // 渲染背景
-        if (this.fadeInStart == 0L && this.fading) {
-            this.fadeInStart = Util.getMillis();
-        }
-        float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
-        this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
-        guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        // // 渲染背景
+        // if (this.fadeInStart == 0L && this.fading) {
+        //     this.fadeInStart = Util.getMillis();
+        // }
+        // float f = this.fading ? (float) (Util.getMillis() - this.fadeInStart) / 1000.0F : 1.0F;
+        // this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
+        // guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
 
         Pair<Integer, Integer> progress = SakuraUpdaterClient.getInstance().getUpdateProgress();
         if (progress.getSecond() >= 0) {
@@ -129,6 +130,5 @@ public class UpdateScreen extends Screen {
         } else {
             guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
         }
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 }
