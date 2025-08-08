@@ -27,6 +27,7 @@ build
 /run-client
 /runs
 /run-data
+/crash-reports
 
 repo
 .VSCodeCounter
