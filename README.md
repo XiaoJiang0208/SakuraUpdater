@@ -1,29 +1,102 @@
+# SakuraUpdater 使用教程
 
-Installation information
-=======
+## 简介
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器的 mod 文件，让玩家能够像其他游戏一样自动获取服务器更新。
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+## 功能特性
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+- [x] 🔄 自动检查服务器更新
+- [x] 📁 支持多种文件同步模式（mirror、push）
+- [x] 🎮 图形化更新界面
+- [ ] 📋 支持版本管理和回滚
+- [x] 🌐 基于 Netty 的高效文件传输
+- [x] ⚙️ 可配置的客户端和服务器设置
 
-Mapping Names:
-============
-The MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+## 安装步骤
 
-MDG Legacy:
-==========
-This template uses [ModDevGradle Legacy](https://github.com/neoforged/ModDevGradle). Documentation can be found [here](https://github.com/neoforged/ModDevGradle/blob/main/LEGACY.md).
+### 服务器端安装
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+1. 将 `sakuraupdater-0.1.1.jar` 放入服务器的 `mods` 文件夹
+2. 启动服务器，首次运行会生成配置文件
+3. 编辑 `config/sakuraupdater-server.toml` 配置文件
+
+### 客户端安装
+
+1. 将 `sakuraupdater-0.1.1.jar` 放入客户端的 `mods` 文件夹
+2. 启动游戏，首次运行会生成配置文件
+3. 编辑 `config/sakuraupdater-client.toml` 配置文件
+
+## 配置说明
+
+### 服务器配置 (sakuraupdater-server.toml)
+
+```toml
+[general]
+# 文件服务器端口
+port = 25564
+
+# 同步目录配置，格式：["源目录:模式:目标目录"]
+# 模式说明：
+# - mirror: 镜像模式，完全同步源目录到目标目录
+# - push: 推送模式，将服务器文件推送到客户端
+# - pull: 拉取模式，从客户端拉取文件到服务器
+SYNC_DIR = [
+    "mods:mirror",                    # 同步 mods 文件夹
+    "config:push:clientconfig",       # 将 config 推送到客户端的 clientconfig
+    "resourcepacks:mirror"            # 同步资源包文件夹
+]
+```
+### 客户端配置 (sakuraupdater-client.toml)
+```toml
+[general]
+# 服务器主机地址
+host = "localhost"
+
+# 服务器端口（需与服务器配置一致）
+port = 25564
+
+# 当前客户端版本（自动管理，请勿手动修改）
+now_version = ""
+```
+## 使用方法
+
+### 1. 服务器管理员操作
+
+#### 创建更新版本
+`/ssync commit <版本号> <描述信息>`
+例如：
+`/ssync commit v1.0.1 "修复了物品复制bug，添加了新的附魔"`
+#### 管理数据版本
+```
+# 查看所有版本
+/ssync data list
+
+# 查看特定版本详情
+/ssync data show v1.0.1
+
+# 编辑版本描述
+/ssync data edit v1.0.1 "更新了版本描述"
+
+# 删除版本
+/ssync data delete v1.0.1
+
+# 清空所有版本数据
+/ssync data clear
+```
+#### 重新加载配置
+```
+# 重新加载服务器配置
+/ssync reload server
+
+# 重新加载数据配置
+/ssync reload data
+```
+### 2. 客户端玩家操作
+
+#### 自动检查更新
+
+当玩家进入游戏时，如果检测到服务器有新版本，会自动弹出更新界面。
+
+#### 重新加载客户端配置
+`/sakuraupdater reload client`

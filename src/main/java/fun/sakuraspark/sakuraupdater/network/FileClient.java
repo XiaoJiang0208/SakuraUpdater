@@ -7,23 +7,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.checkerframework.dataflow.qual.Pure;
 import org.slf4j.Logger;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.ibm.icu.impl.Pair;
 import com.mojang.logging.LogUtils;
 
 import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;

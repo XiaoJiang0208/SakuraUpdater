@@ -29,7 +29,7 @@ public class SakuraUpdater {
         // modEventBus.addListener(this::commonSetup);
 
         // Register ourselves for server and other game events we are interested in
-        MinecraftForge.EVENT_BUS.register(this);
+        //NeoForge.EVENT_BUS.register(this);
 
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
             LOGGER.info("Try run SakuraUpdater Server");

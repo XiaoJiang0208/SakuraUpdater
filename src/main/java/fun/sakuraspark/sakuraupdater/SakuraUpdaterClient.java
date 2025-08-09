@@ -118,6 +118,7 @@ public class SakuraUpdaterClient {
         if (integrityCheckResult.getFirst().isEmpty() && integrityCheckResult.getSecond().isEmpty()) {
             LOGGER.info("No files to remove or download.");
             update_progress = new Pair<>(0, 0);
+            ClientConfig.setNowVersion(last_update_data.version); // 不需要更新文件但是还是需要更新本地版本号
             return false;
         }
 

@@ -43,6 +43,7 @@ public class ClientConfig {
 	public static void onLoad(final ModConfigEvent event) {
 		port = PORT.get();
 		host = HOST.get();
+		while (SakuraUpdaterClient.getInstance() == null);
 		SakuraUpdaterClient.getInstance().connectToServer();
 	}
 
@@ -52,5 +53,6 @@ public class ClientConfig {
 
 	public static void setNowVersion(String version) {
 		now_version.set(version);
+		SPEC.save();
 	}
 }

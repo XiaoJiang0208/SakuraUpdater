@@ -5,10 +5,8 @@ import static fun.sakuraspark.sakuraupdater.network.MsgType.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.RandomAccess;
 
 import org.slf4j.Logger;
 
@@ -29,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;

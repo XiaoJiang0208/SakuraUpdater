@@ -91,6 +91,7 @@ public class DataConfig {
             data.paths = files != null ? files : new ArrayList<>(); // 如果files为null，初始化为空列表
             datalist.add(0, data); // 添加到列表的开头
             DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+            SPEC.save();
             
             LOGGER.debug("Added new data: {}", data);
             return true; // 如果转换成功，返回true
@@ -107,6 +108,7 @@ public class DataConfig {
                 data.description = description;
                 data.paths = files != null ? files : data.paths; // 如果files为null，使用原始文件列表
                 DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+                SPEC.save();
                 LOGGER.debug("Edited data: {}", data);
                 return true; // 如果找到并编辑成功，返回true
             }
@@ -118,18 +120,21 @@ public class DataConfig {
     public static void clearData() {
         datalist.clear();
         DATA.set(List.of());
+        SPEC.save();
         LOGGER.debug("Cleared all data.");
     }
 
     public static void removeData(String version) {
         datalist.removeIf(data -> data.version.equals(version)); // 根据版本号删除数据
         DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+        SPEC.save();
         LOGGER.debug("Removed data with version: {}", version);
     }
     public static void removeLastData() {
         if (!datalist.isEmpty()) {
             Data removedData = datalist.remove(0); // 删除列表中的第一个元素
             DATA.set(datalist.stream().map(d -> new Gson().toJson(d)).toList());
+            SPEC.save();
             LOGGER.debug("Removed last data: {}", removedData);
         } else {
             LOGGER.warn("No data to remove.");

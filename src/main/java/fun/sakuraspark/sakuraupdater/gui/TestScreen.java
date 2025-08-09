@@ -37,7 +37,6 @@ public class TestScreen extends Screen {
 
     @Override
     public void init() {
-        // TODO Auto-generated method stub
         super.init();
         // this.addRenderableWidget(Button.builder(Component.translatable("setScreen"),
         // (button) -> {
@@ -63,6 +62,8 @@ public class TestScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+
         if (this.fadeInStart == 0L && this.fading) {
             this.fadeInStart = Util.getMillis();
         }
@@ -71,7 +72,6 @@ public class TestScreen extends Screen {
         this.panorama.render(partialTick, Mth.clamp(f, 0.0F, 1.0F));
         guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     // @Override
