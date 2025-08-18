@@ -1,5 +1,7 @@
 package fun.sakuraspark.sakuraupdater.gui;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.mojang.datafixers.util.Pair;
 
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
@@ -29,7 +31,17 @@ public class UpdateScreen extends Screen {
 
     public UpdateScreen() {
         super(Component.translatable("gui.sakuraupdater.screen.UpdateScreen"));
-        SakuraUpdaterClient.getInstance().downloadUpdate();
+        CompletableFuture.supplyAsync(() -> {
+            // 这里运行在后台线程中
+            SakuraUpdaterClient.getInstance().downloadUpdate();
+            return 0;
+        }, Util.backgroundExecutor()) // 使用 Minecraft 的后台线程池
+                .thenAcceptAsync(result -> {
+                    // 回到主线程更新UI
+                    Minecraft.getInstance().execute(() -> {
+                        this.rebuildWidgets();
+                    });
+                });
     }
 
     @Override
