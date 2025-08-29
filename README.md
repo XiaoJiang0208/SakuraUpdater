@@ -36,14 +36,14 @@ SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器�
 # 文件服务器端口
 port = 25564
 
-# 同步目录配置，格式：["源目录:模式:目标目录"]
+# 同步目录配置，格式：["目标目录:模式:源目录:额外的源目录:..."]
 # 模式说明：
 # - mirror: 镜像模式，完全同步源目录到目标目录
 # - push: 推送模式，将服务器文件推送到客户端
 # - pull: 拉取模式，从客户端拉取文件到服务器
 SYNC_DIR = [
     "mods:mirror",                    # 同步 mods 文件夹
-    "config:push:clientconfig",       # 将 config 推送到客户端的 clientconfig
+    "config:push:clientconfig:config",       # 将 config和clientconfig 推送到客户端的 clientc
     "resourcepacks:mirror"            # 同步资源包文件夹
 ]
 ```
@@ -64,33 +64,33 @@ now_version = ""
 ### 1. 服务器管理员操作
 
 #### 创建更新版本
-`/ssync commit <版本号> <描述信息>`
+`/sakuraupdater commit <版本号> <描述信息>`
 例如：
-`/ssync commit v1.0.1 "修复了物品复制bug，添加了新的附魔"`
+`/sakuraupdater commit v1.0.1 "修复了物品复制bug，添加了新的附魔"`
 #### 管理数据版本
 ```
 # 查看所有版本
-/ssync data list
+/sakuraupdater data list
 
 # 查看特定版本详情
-/ssync data show v1.0.1
+/sakuraupdater data show v1.0.1
 
 # 编辑版本描述
-/ssync data edit v1.0.1 "更新了版本描述"
+/sakuraupdater data edit v1.0.1 "更新了版本描述"
 
 # 删除版本
-/ssync data delete v1.0.1
+/sakuraupdater data delete v1.0.1
 
 # 清空所有版本数据
-/ssync data clear
+/sakuraupdater data clear
 ```
 #### 重新加载配置
 ```
 # 重新加载服务器配置
-/ssync reload server
+/sakuraupdater reload server
 
 # 重新加载数据配置
-/ssync reload data
+/sakuraupdater reload data
 ```
 ### 2. 客户端玩家操作
 
