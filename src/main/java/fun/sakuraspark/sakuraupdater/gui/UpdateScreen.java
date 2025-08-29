@@ -30,7 +30,7 @@ public class UpdateScreen extends Screen {
     private float EASING_SPEED = 0.1f; // 缓动速度
 
     public UpdateScreen() {
-        super(Component.translatable("gui.sakuraupdater.screen.UpdateScreen"));
+        super(Component.translatable("gui.sakuraupdater.UpdateScreen"));
         CompletableFuture.supplyAsync(() -> {
             // 这里运行在后台线程中
             SakuraUpdaterClient.getInstance().downloadUpdate();
