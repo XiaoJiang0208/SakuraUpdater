@@ -24,16 +24,23 @@ public class MarkdownBox extends AbstractScrollWidget {
     private List<String> parseMarkdown(String text) {
         List<String> result = new ArrayList<>();
         String[] rawLines = text.split("\n");
+        Font font = Minecraft.getInstance().font;
         for (String line : rawLines) {
             // 这里只做简单处理，复杂的可以用第三方库
             if (line.startsWith("# ")) {
-                result.add("§l" + line.substring(2)); // §l为Minecraft粗体
+                line = "§l" + line.substring(2); // §l为Minecraft粗体
             } else if (line.startsWith("## ")) {
-                result.add("§n" + line.substring(3)); // §n为Minecraft下划线
+                line = "§n" + line.substring(3); // §n为Minecraft下划线
             } else {
                 // 替换**加粗**
                 line = line.replace("**", "§l").replace("*", "§o");
-                result.add(line);
+            }
+            for (int i = 0; i < line.length(); ) {
+                int nextBreak = font.plainSubstrByWidth(line.substring(i), this.getWidth() - 8).length();
+                if (nextBreak == 0) break;
+                String subLine = line.substring(i, i + nextBreak);
+                result.add(subLine);
+                i += nextBreak;
             }
         }
         return result;
