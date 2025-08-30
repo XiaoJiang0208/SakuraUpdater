@@ -176,6 +176,15 @@ public class SakuraUpdaterClient {
         LOGGER.info("Connected to SakuraUpdater Server at {}:{}", ClientConfig.host, ClientConfig.port);
     }
 
+    public void disconnectFromServer() {
+        if (file_client == null || !file_client.isConnected()) {
+            LOGGER.warn("Not connected to the server.");
+            return;
+        }
+        file_client.disconnect();
+        LOGGER.info("Disconnected from SakuraUpdater Server.");
+    }
+
     @SubscribeEvent
     public void onScreenOpenning(ScreenEvent.Opening event) {
         // 主菜单渲染完成
