@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import fun.sakuraspark.sakuraupdater.SakuraUpdater;
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
+import fun.sakuraspark.sakuraupdater.SakuraUpdaterServer;
 import fun.sakuraspark.sakuraupdater.gui.components.MarkdownBox;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -74,6 +75,7 @@ public class UpdateCheckScreen extends Screen {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
+                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         } else if (updateStatus == 1) {
@@ -85,12 +87,14 @@ public class UpdateCheckScreen extends Screen {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
+                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         } else {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.ok"), button -> {
                         // 点击按钮后关闭当前界面
+                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         }

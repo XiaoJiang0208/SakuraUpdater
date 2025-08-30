@@ -64,9 +64,11 @@ now_version = ""
 ### 1. 服务器管理员操作
 
 #### 创建更新版本
-`/sakuraupdater commit <版本号> <描述信息>`
-例如：
-`/sakuraupdater commit v1.0.1 "修复了物品复制bug，添加了新的附魔"`
+`/sakuraupdater commit <版本号> <描述信息/描述文件路径>`
+例如:
+`/sakuraupdater commit v1.0.1 修复了物品复制bug\n添加了新的附魔`
+或文本文件(极少的md格式支持)
+`/sakuraupdater commit v1.0.1 description.md`
 #### 管理数据版本
 ```
 # 查看所有版本

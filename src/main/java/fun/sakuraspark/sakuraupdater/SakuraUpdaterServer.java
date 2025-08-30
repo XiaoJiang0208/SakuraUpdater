@@ -22,6 +22,9 @@ import net.minecraft.commands.CommandSourceStack;
 import static net.minecraft.commands.Commands.*;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -263,7 +266,7 @@ public class SakuraUpdaterServer {
                 .requires(source -> source.hasPermission(2))
                 .then(argument("version", string())
                         .suggests(VERSION_SUGGESTIONS)
-                        .then(argument("description", string())
+                        .then(argument("description", greedyString())
                                 .executes(context -> {
                                     String version = getString(context, "version");
                                     String description = getString(context, "description");
@@ -279,7 +282,19 @@ public class SakuraUpdaterServer {
                                         return 0; // 如果获取文件数据失败，返回0
                                     }
 
-                                    if (!DataConfig.addData(version, timestamp, description, path_data)) {
+                                    String fileContent = null;
+                                    if (new File(description).exists()) {
+                                        // 如果描述文件存在，读取内容并添加到提交数据中
+                                        try {
+                                            fileContent = Files.readString(Path.of(description));
+                                        } catch (IOException e) {
+                                            sendFailureMessage(context.getSource(),
+                                                    "Description file is exist but failed to read description file: " + e.getMessage());
+                                            return 0; // 如果读取失败，返回0
+                                        }
+                                    }
+
+                                    if (!DataConfig.addData(version, timestamp, fileContent != null ? fileContent : description.replace("\\n", "\n"), path_data)) {
                                         sendFailureMessage(context.getSource(),
                                                 "Failed to add commit: Version already exists or invalid data.");
                                         return 0; // 如果添加失败，返回0
