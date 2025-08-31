@@ -37,6 +37,7 @@ public class SakuraUpdaterClient {
 
     private FileClient file_client;
     private Data last_update_data = null; // 上次更新的数据
+    private Data current_update_data = null; // 当前更新的数据，只有存在push时才会有
 
     private Pair<Integer, Integer> update_progress = new Pair<>(-1, -1); // 更新进度
     private int download_failures = 0; // 更新失败次数
@@ -101,6 +102,27 @@ public class SakuraUpdaterClient {
                     if (!pathData.files.stream().anyMatch(fileData -> file.toString().equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file)))) { // 对比md5
                         LOGGER.warn("File {} will be deleted.", file.getName());
                         integrityCheckResult.getFirst().add(file);
+                    }
+                });
+            }
+            //push需要删除
+            if (pathData.model.equals("push")) {
+                if (current_update_data == null) {
+                    current_update_data = file_client.getUpdateList(ClientConfig.getNowVersion());
+                    if (current_update_data == null) {
+                        LOGGER.error("Failed to fetch current update list from server.");
+                        return false;
+                    }
+                    LOGGER.info("Current update list fetched successfully: {}", gson.toJson(current_update_data));
+                }
+                current_update_data.paths.forEach(CurrentPathData -> {
+                    if (CurrentPathData.targetPath.equals(pathData.targetPath)) {
+                        CurrentPathData.files.forEach(file -> {
+                            if (!pathData.files.stream().anyMatch(fileData -> file.targetPath.equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file.targetPath)))) { // 判断是否存在和对比md5
+                                LOGGER.warn("File {} will be deleted in push mode.", file.targetPath);
+                                integrityCheckResult.getFirst().add(new File(file.targetPath));
+                            }
+                        });
                     }
                 });
             }
