@@ -104,8 +104,11 @@ public class FileClient {
     /**
      * 获取可用文件列表
      */
-    @Nullable
     public Data getUpdateList() {
+        return getUpdateList(null);
+    }
+    @Nullable
+    public Data getUpdateList(String version) {
         if (channel == null || !channel.isActive()) {
             LOGGER.error("未连接到文件服务器");
             return null;
@@ -116,6 +119,9 @@ public class FileClient {
         
         ByteBuf buf = Unpooled.buffer(1);
         buf.writeByte(MSG_TYPE_GET_UPDATE_LIST);
+        if (version != null && !version.isEmpty()) {
+            buf.writeBytes(version.getBytes(CharsetUtil.UTF_8));
+        }
         channel.writeAndFlush(buf);
 
         try {

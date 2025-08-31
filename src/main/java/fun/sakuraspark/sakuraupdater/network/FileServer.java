@@ -127,7 +127,7 @@ public class FileServer {
             // 处理不同类型的请求
             switch (request) {
                 case MSG_TYPE_GET_UPDATE_LIST:
-                    sendUpdateList(ctx);
+                    sendUpdateList(ctx, msg);
                     break;
                 case MSG_TYPE_GET_FILE:
                     sendFile(ctx, msg);
@@ -162,9 +162,15 @@ public class FileServer {
         /**
          * 发送最新数据
          */ 
-        private void sendUpdateList(ChannelHandlerContext ctx) {
+        private void sendUpdateList(ChannelHandlerContext ctx, ByteBuf msg) {
             StringBuilder sb = new StringBuilder();
-            Data data = DataConfig.getLastData();
+            String version = msg.readableBytes() > 0 ? msg.toString(CharsetUtil.UTF_8) : null; // 获取版本号
+            Data data = null;
+            if (version != null && !version.isEmpty()) {
+                data = DataConfig.getDataByVersion(version);
+            } else {
+                data = DataConfig.getLastData();
+            }
             if (data == null) {
                 sb.append("{}");
             } else {
