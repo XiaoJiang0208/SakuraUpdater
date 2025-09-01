@@ -70,6 +70,7 @@ public class UpdateScreen extends Screen {
 
                 this.addRenderableWidget(
                         Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.restartnow"), button -> {
+                            SakuraUpdaterClient.getInstance().disconnectFromServer();
                             Minecraft.getInstance().stop();
                         }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
                 this.addRenderableWidget(Button

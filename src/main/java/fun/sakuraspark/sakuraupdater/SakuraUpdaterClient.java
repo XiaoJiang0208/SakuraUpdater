@@ -99,13 +99,14 @@ public class SakuraUpdaterClient {
             // mirror需要删除
             if (pathData.model.equals("mirror")) {
                 FileUtils.getAllFiles(new File(pathData.targetPath)).forEach(file -> {
-                    if (!pathData.files.stream().anyMatch(fileData -> file.toString().equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file)))) { // 对比md5
+                    if (!pathData.files.stream().anyMatch(fileData -> file.toString().equals(fileData.targetPath)
+                            && fileData.md5.equals(MD5.calculateMD5(file)))) { // 对比md5
                         LOGGER.warn("File {} will be deleted.", file.getName());
                         integrityCheckResult.getFirst().add(file);
                     }
                 });
             }
-            //push需要删除
+            // push需要删除
             if (pathData.model.equals("push")) {
                 if (current_update_data == null) {
                     current_update_data = file_client.getUpdateList(ClientConfig.getNowVersion());
@@ -115,27 +116,34 @@ public class SakuraUpdaterClient {
                     }
                     LOGGER.info("Current update list fetched successfully: {}", gson.toJson(current_update_data));
                 }
-                current_update_data.paths.forEach(CurrentPathData -> {
-                    if (CurrentPathData.targetPath.equals(pathData.targetPath)) {
-                        CurrentPathData.files.forEach(file -> {
-                            if (!pathData.files.stream().anyMatch(fileData -> file.targetPath.equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file.targetPath)))) { // 判断是否存在和对比md5
-                                LOGGER.warn("File {} will be deleted in push mode.", file.targetPath);
-                                integrityCheckResult.getFirst().add(new File(file.targetPath));
-                            }
-                        });
-                    }
-                });
+                if (current_update_data.version != null
+                        && !current_update_data.version.equals(last_update_data.version)) { // 版本不一致时执行，避免""会自动返回最新版本问题
+                    current_update_data.paths.forEach(CurrentPathData -> {
+                        if (CurrentPathData.targetPath.equals(pathData.targetPath)) {
+                            CurrentPathData.files.forEach(file -> {
+                                if (!pathData.files.stream()
+                                        .anyMatch(fileData -> file.targetPath.equals(fileData.targetPath)
+                                                && fileData.md5.equals(MD5.calculateMD5(new File(file.targetPath))))) { // 判断是否存在和对比md5
+                                    LOGGER.warn("File {} will be deleted in push mode.", file.targetPath);
+                                    integrityCheckResult.getFirst().add(new File(file.targetPath));
+                                }
+                            });
+                        }
+                    });
+                }
             }
             // 需要下载
             pathData.files.forEach(fileData -> {
                 if (!FileUtils.getAllFiles(new File(pathData.targetPath)).stream()
-                        .anyMatch(file -> file.toString().equals(fileData.targetPath) && fileData.md5.equals(MD5.calculateMD5(file)))) { // 判断是否存在和对比md5
-                    LOGGER.warn("File {} will be downloaded to {}", fileData.sourcePath+":"+fileData.md5, MD5.calculateMD5(fileData.targetPath));
+                        .anyMatch(file -> file.toString().equals(fileData.targetPath)
+                                && fileData.md5.equals(MD5.calculateMD5(file)))) { // 判断是否存在和对比md5
+                    LOGGER.warn("File {} will be downloaded to {}", fileData.sourcePath + ":" + fileData.md5,
+                            fileData.targetPath);
                     integrityCheckResult.getSecond().add(fileData);
                 }
             });
         }
-        
+
         download_failures = 0; // 重置失败次数
         if (integrityCheckResult.getFirst().isEmpty() && integrityCheckResult.getSecond().isEmpty()) {
             LOGGER.info("No files to remove or download.");
@@ -144,7 +152,8 @@ public class SakuraUpdaterClient {
             return false;
         }
 
-        update_progress = new Pair<>(0, integrityCheckResult.getFirst().size()+integrityCheckResult.getSecond().size()); // 更新进度
+        update_progress = new Pair<>(0,
+                integrityCheckResult.getFirst().size() + integrityCheckResult.getSecond().size()); // 更新进度
         return true;
     }
 
@@ -156,6 +165,7 @@ public class SakuraUpdaterClient {
                 update_progress = new Pair<>(update_progress.getFirst() + 1, update_progress.getSecond());
             } else {
                 LOGGER.error("Failed to delete file: {}", file);
+                update_progress = new Pair<>(update_progress.getFirst() + 1, update_progress.getSecond());
             }
         });
 
