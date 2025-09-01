@@ -166,10 +166,10 @@ public class FileServer {
             StringBuilder sb = new StringBuilder();
             String version = msg.readableBytes() > 0 ? msg.toString(CharsetUtil.UTF_8) : null; // 获取版本号
             Data data = null;
-            if (version != null && !version.isEmpty()) {
-                data = DataConfig.getDataByVersion(version);
-            } else {
+            if (version == null) {
                 data = DataConfig.getLastData();
+            } else if (!version.isEmpty()) {
+                data = DataConfig.getDataByVersion(version);
             }
             if (data == null) {
                 sb.append("{}");

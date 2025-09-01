@@ -17,7 +17,7 @@ public class MD5 {
     }
 
     // MD5计算方法，接受字符串输入
-    public static String calculateMD5(String input) {
+    public static String calculateStringMD5(String input) {
         return calculateMD5(input.getBytes());
     }
 
