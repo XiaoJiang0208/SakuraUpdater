@@ -29,6 +29,7 @@ import static net.minecraft.commands.Commands.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SakuraUpdaterClient {
 
@@ -43,7 +44,7 @@ public class SakuraUpdaterClient {
     private int download_failures = 0; // 更新失败次数
     Pair<List<File>, List<FileData>> integrityCheckResult;
 
-    private boolean need_show = true;
+    private AtomicBoolean need_show = new AtomicBoolean(true);
     private boolean debug = false; // 是否开启调试模式
 
     SakuraUpdaterClient() {
@@ -217,9 +218,9 @@ public class SakuraUpdaterClient {
     @SubscribeEvent
     public void onScreenOpenning(ScreenEvent.Opening event) {
         // 主菜单渲染完成
-        if (!need_show)
+        if (!need_show.get() || !(event.getScreen() instanceof net.minecraft.client.gui.screens.TitleScreen))
             return;
-        need_show = false;
+        need_show.set(false);
 
         if (debug) {
             // event.setNewScreen(new TestScreen());

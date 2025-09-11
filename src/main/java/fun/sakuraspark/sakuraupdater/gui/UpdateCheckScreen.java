@@ -2,6 +2,10 @@ package fun.sakuraspark.sakuraupdater.gui;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
+
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
 import fun.sakuraspark.sakuraupdater.gui.components.MarkdownBox;
 import net.minecraft.Util;
@@ -26,8 +30,11 @@ public class UpdateCheckScreen extends Screen {
 
     private int updateStatus = 0; // -1: error, 0: checking, 1: need update, 2: no update 3: only server update
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public UpdateCheckScreen() {
         super(Component.translatable("gui.sakuraupdater.UpdateCheckScreen"));
+        LOGGER.info("start version checking...");
         CompletableFuture.supplyAsync(() -> {
             // 这里运行在后台线程中
             try {
