@@ -72,8 +72,6 @@ public class SakuraUpdaterClient {
         if (getLastUpdateData() == null) {
             return -1;
         }
-        Gson gson = new Gson();
-        LOGGER.info("Update list fetched successfully: {}", gson.toJson(last_update_data));
         if (last_update_data.version.equals(ClientConfig.getNowVersion())) {
             LOGGER.info("Client is up to date.");
             return 0;
@@ -89,7 +87,6 @@ public class SakuraUpdaterClient {
             return false;
         }
         Gson gson = new Gson();
-        LOGGER.info("Update list fetched successfully: {}", gson.toJson(last_update_data));
         for (PathData pathData : last_update_data.paths) {
             // 格式错误
             if (!pathData.model.equals("mirror") && !pathData.model.equals("push")) {
