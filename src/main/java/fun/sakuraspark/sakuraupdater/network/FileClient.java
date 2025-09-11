@@ -97,6 +97,10 @@ public class FileClient {
             group.shutdownGracefully();
         }
         this.handler = null;
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (int i = 2; i < stackTrace.length; i++) {
+            LOGGER.info("Called from: {}", stackTrace[i]);
+        }
         LOGGER.info("已断开文件服务器连接");
         
     }

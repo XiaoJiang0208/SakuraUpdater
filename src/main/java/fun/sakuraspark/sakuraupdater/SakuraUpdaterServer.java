@@ -2,7 +2,6 @@ package fun.sakuraspark.sakuraupdater;
 
 import org.slf4j.Logger;
 
-import com.ibm.icu.impl.Pair;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 

@@ -2,9 +2,7 @@ package fun.sakuraspark.sakuraupdater.gui;
 
 import java.util.concurrent.CompletableFuture;
 
-import fun.sakuraspark.sakuraupdater.SakuraUpdater;
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
-import fun.sakuraspark.sakuraupdater.SakuraUpdaterServer;
 import fun.sakuraspark.sakuraupdater.gui.components.MarkdownBox;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
