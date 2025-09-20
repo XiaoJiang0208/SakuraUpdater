@@ -57,6 +57,7 @@ public class SakuraUpdaterServer {
     private List<PathData> getPathDataList() {
         List<PathData> pathDataList = new ArrayList<>();
         for (String syncDir : ServerConfig.getSyncDirs()) {
+            LOGGER.info("Processing sync directory: {}", syncDir);
             List<String> parts = List.of(syncDir.split(":"));
             if (parts.size() < 2) {
                 LOGGER.warn("Invalid sync directory format: {}", syncDir);
@@ -73,8 +74,8 @@ public class SakuraUpdaterServer {
                 LOGGER.debug("now scan {}", new File(source));
                 FileUtils.getAllFiles(new File(source)).forEach(file -> {
                     FileData fileData = new FileData();
-                    fileData.sourcePath = file.toString();
-                    fileData.targetPath = file.toString().replace(source, targetPath);
+                    fileData.sourcePath = file.toString().replace(File.separator, "/");
+                    fileData.targetPath = file.toString().replace(source, targetPath).replace(File.separator, "/");
                     fileData.md5 = MD5.calculateMD5(file);
                     data.files.add(fileData);
 
@@ -273,6 +274,9 @@ public class SakuraUpdaterServer {
                                     List<PathData> path_data;
                                     try {
                                         path_data = getPathDataList();
+
+
+
                                     } catch (Exception e) {
                                         sendFailureMessage(context.getSource(),
                                                 "Failed to get file data: " + e.getMessage());

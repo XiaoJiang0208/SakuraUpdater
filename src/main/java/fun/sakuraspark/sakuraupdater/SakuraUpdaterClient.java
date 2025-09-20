@@ -97,11 +97,22 @@ public class SakuraUpdaterClient {
             // mirror需要删除
             if (pathData.model.equals("mirror")) {
                 FileUtils.getAllFiles(new File(pathData.targetPath)).forEach(file -> {
-                    if (!pathData.files.stream().anyMatch(fileData -> file.toString().equals(fileData.targetPath)
-                            && fileData.md5.equals(MD5.calculateMD5(file)))) { // 对比md5
-                        LOGGER.warn("File {} will be deleted.", file.getName());
+                    FileData fileData = null;
+                    for (FileData fd : pathData.files) {
+                        if (fd.targetPath.equals(file.toString().replace(File.separator, "/"))) { // 判断是否存
+                            fileData = fd;
+                            break;
+                        }
+                    }
+                    if (fileData == null) {
+                        LOGGER.warn("File {} not in list\nwill be deleted in mirror mode.", file);
                         integrityCheckResult.getFirst().add(file);
                     }
+                    if (fileData != null && !fileData.md5.equals(MD5.calculateMD5(file))) {
+                        LOGGER.warn("File {} md5 not match\nwill be removed in mirror mode.", file);
+                        integrityCheckResult.getFirst().add(file); // 文件损坏也删除
+                    }
+
                 });
             }
             // push需要删除
@@ -133,7 +144,7 @@ public class SakuraUpdaterClient {
             // 需要下载
             pathData.files.forEach(fileData -> {
                 if (!FileUtils.getAllFiles(new File(pathData.targetPath)).stream()
-                        .anyMatch(file -> file.toString().equals(fileData.targetPath)
+                        .anyMatch(file -> file.toString().replace(File.separator, "/").equals(fileData.targetPath)
                                 && fileData.md5.equals(MD5.calculateMD5(file)))) { // 判断是否存在和对比md5
                     LOGGER.warn("File {} will be downloaded to {}", fileData.sourcePath + ":" + fileData.md5,
                             fileData.targetPath);
