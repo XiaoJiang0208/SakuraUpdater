@@ -1,4 +1,4 @@
-# SakuraUpdater 使用教程
+# SakuraUpdater 使用教程 ([EN Version](#sakuraupdater--usage-guide))
 
 ## 简介
 
@@ -9,8 +9,6 @@ SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器�
 - [x] 🔄 自动检查服务器更新
 - [x] 📁 支持多种文件同步模式（mirror、push）
 - [x] 🎮 图形化更新界面
-- [ ] 📋 支持版本管理和回滚
-- [x] 🌐 基于 Netty 的高效文件传输
 - [x] ⚙️ 可配置的客户端和服务器设置
 
 ## 安装步骤
@@ -101,4 +99,117 @@ now_version = ""
 当玩家进入游戏时，如果检测到服务器有新版本，会自动弹出更新界面。
 
 #### 重新加载客户端配置
+`/sakuraupdater reload client`
+
+
+# SakuraUpdater — Usage Guide
+
+## Introduction
+
+SakuraUpdater is a NeoForge Minecraft mod that enables automatic synchronization of mod files between a server and clients, allowing players to receive server updates automatically, similar to other games.
+
+## Features
+
+- [x] 🔄 Automatic server update checks
+- [x] 📁 Multiple sync modes supported (mirror, push)
+- [x] 🎮 Graphical update UI
+- [x] ⚙️ Configurable client and server settings
+
+## Installation
+
+### Server-side installation
+
+1. Place `sakuraupdater-0.1.1.jar` into the server's `mods` folder.
+2. Start the server. Configuration files will be generated on first run.
+3. Edit the server configuration file at `config/sakuraupdater-server.toml`.
+
+### Client-side installation
+
+1. Place `sakuraupdater-0.1.1.jar` into the client's `mods` folder.
+2. Start the game. Configuration files will be generated on first run.
+3. Edit the client configuration file at `config/sakuraupdater-client.toml`.
+
+## Configuration
+
+### Server configuration (`sakuraupdater-server.toml`)
+
+```toml
+[general]
+# File server port
+port = 25564
+
+# Sync directory configuration, format: ["target_dir:mode:source_dir:extra_source_dir:..."]
+# Mode explanations:
+# - mirror: mirror mode, fully synchronize source directory to the target directory
+# - push: push mode, push server files to clients
+# - pull: pull mode, pull files from clients to the server
+SYNC_DIR = [
+    "mods:mirror",                    # synchronize the mods folder
+    "config:push:clientconfig:config",       # push config and clientconfig to the client
+    "resourcepacks:mirror"            # synchronize resourcepacks folder
+]
+```
+
+### Client configuration (`sakuraupdater-client.toml`)
+
+```toml
+[general]
+# Server host address
+host = "localhost"
+
+# Server port (should match the server configuration)
+port = 25564
+
+# Current client version (managed automatically; do not edit manually)
+now_version = ""
+```
+
+## Usage
+
+### 1. Server administrator operations
+
+#### Create a release/commit
+`/sakuraupdater commit <version> <description-or-path-to-description-file>`
+Example:
+`/sakuraupdater commit v1.0.1 Fixed item duplication bug\nAdded new enchantments`
+or using a text file (minimal markdown supported):
+`/sakuraupdater commit v1.0.1 description.md`
+
+#### Manage data versions
+
+```
+# List all versions
+/sakuraupdater data list
+
+# Show details for a specific version
+/sakuraupdater data show v1.0.1
+
+# Edit version description
+/sakuraupdater data edit v1.0.1 "Updated version description"
+
+# Delete a version
+/sakuraupdater data delete v1.0.1
+
+# Clear all version data
+/sakuraupdater data clear
+```
+
+#### Reload configuration
+
+```
+# Reload server config
+/sakuraupdater reload server
+
+# Reload data config
+/sakuraupdater reload data
+```
+
+### 2. Client player operations
+
+#### Automatic update check
+
+When a player joins the game, the client will automatically check whether the server has a newer version and will open the update UI if an update is available.
+
+#### Reload client config
+
 `/sakuraupdater reload client`
