@@ -1,0 +1,63 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配所有 tag，改为 'v*' 可只匹配 v 开头的 tag
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission to Gradle wrapper
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean build
+
+      - name: List built jars
+        run: |
+          echo "Built jar files:"
+          ls -la build/libs || true
+          ls -la build/devlibs || true
+
+      - name: Get tag commit message
+        id: get_msg
+        run: |
+          # 获取 tag 指向的提交 SHA
+          sha=$(git rev-list -n 1 "${GITHUB_REF}")
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+          # 获取该提交的提交信息（多行安全写入输出）
+          msg=$(git show -s --format=%B "$sha" || true)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$msg" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_REF: ${{ github.ref }}
+
+      - name: Create Release and upload jars
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.get_msg.outputs.body }}
+          files: |
+            build/libs/*.jar
+            build/devlibs/*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
