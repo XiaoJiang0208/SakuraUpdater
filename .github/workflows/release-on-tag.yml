@@ -1,5 +1,9 @@
 name: Release on Tag
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     tags:
@@ -58,6 +62,5 @@ jobs:
           body: ${{ steps.get_msg.outputs.body }}
           files: |
             build/libs/*.jar
-            build/devlibs/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
