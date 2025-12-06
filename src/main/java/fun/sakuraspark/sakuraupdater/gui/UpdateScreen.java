@@ -28,6 +28,8 @@ public class UpdateScreen extends Screen {
     // 缓动控制
     private float currentProgress = 0.0f;
     private float EASING_SPEED = 0.1f; // 缓动速度
+    
+    private int updateStatus = -1;
 
     public UpdateScreen() {
         super(Component.translatable("gui.sakuraupdater.UpdateScreen"));
@@ -39,6 +41,7 @@ public class UpdateScreen extends Screen {
                 .thenAcceptAsync(result -> {
                     // 回到主线程更新UI
                     Minecraft.getInstance().execute(() -> {
+                        updateStatus = SakuraUpdaterClient.getInstance().getDownloadFailures();
                         this.rebuildWidgets();
                     });
                 });
@@ -51,18 +54,15 @@ public class UpdateScreen extends Screen {
 
     @Override
     public void init() {
-        if (SakuraUpdaterClient.getInstance().getUpdateProgress().getSecond() != -1
-                && SakuraUpdaterClient.getInstance().getUpdateProgress().getFirst() != -1
-                && SakuraUpdaterClient.getInstance().getUpdateProgress().getSecond() == SakuraUpdaterClient
-                        .getInstance().getUpdateProgress().getFirst()) {
+        if (updateStatus = -1) {
             // 如果有更新进度，重建界面添加按钮
-            if (SakuraUpdaterClient.getInstance().getDownloadFailures() != 0) {
+            if (updateStatus != 0) {
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.retry",
-                        SakuraUpdaterClient.getInstance().getDownloadFailures()), button -> {
+                        updateStatus), button -> {
                             Minecraft.getInstance().setScreen(new UpdateCheckScreen());
                         }).bounds(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.cancel",
-                        SakuraUpdaterClient.getInstance().getDownloadFailures()), button -> {
+                        updateStatus), button -> {
                             SakuraUpdaterClient.getInstance().disconnectFromServer();
                             Minecraft.getInstance().setScreen(new TitleScreen(true));
                         }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
@@ -129,16 +129,13 @@ public class UpdateScreen extends Screen {
                     progress.getSecond(), partialTick);
         }
 
-        if (SakuraUpdaterClient.getInstance().getUpdateProgress().getSecond() != -1
-                && SakuraUpdaterClient.getInstance().getUpdateProgress().getFirst() != -1
-                && SakuraUpdaterClient.getInstance().getUpdateProgress().getSecond() == SakuraUpdaterClient
-                        .getInstance().getUpdateProgress().getFirst()) {
+        if (updateStatus != -1) {
             guiGraphics.drawCenteredString(this.font, Component.translatable("gui.sakuraupdater.UpdateScreen.complete"),
                     this.width / 2, this.height / 2 - 20, 16777215);
-            if (SakuraUpdaterClient.getInstance().getDownloadFailures() != 0) {
+            if (updateStatus != 0) {
                 guiGraphics.drawCenteredString(this.font,
                         Component.translatable("gui.sakuraupdater.UpdateScreen.failed",
-                                SakuraUpdaterClient.getInstance().getDownloadFailures()),
+                                updateStatus),
                         this.width / 2, this.height / 2, 16777215);
             }
 

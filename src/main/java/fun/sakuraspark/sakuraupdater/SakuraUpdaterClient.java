@@ -41,7 +41,7 @@ public class SakuraUpdaterClient {
     private Data current_update_data = null; // 当前更新的数据，只有存在push时才会有
 
     private Pair<Integer, Integer> update_progress = new Pair<>(-1, -1); // 更新进度
-    private int download_failures = 0; // 更新失败次数
+    private int download_failures = -1; // 更新失败次数
     Pair<List<File>, List<FileData>> integrityCheckResult;
 
     private AtomicBoolean need_show = new AtomicBoolean(true);
@@ -153,7 +153,7 @@ public class SakuraUpdaterClient {
             });
         }
 
-        download_failures = 0; // 重置失败次数
+        download_failures = -1; // 重置失败次数
         if (integrityCheckResult.getFirst().isEmpty() && integrityCheckResult.getSecond().isEmpty()) {
             LOGGER.info("No files to remove or download.");
             update_progress = new Pair<>(0, 0);
@@ -167,6 +167,9 @@ public class SakuraUpdaterClient {
     }
 
     public void downloadUpdate() {
+        if (download_failures == -1) {
+            download_failures = 0;
+        }
         // 删除不需要的文件
         integrityCheckResult.getFirst().forEach(file -> {
             if (file.delete()) {
