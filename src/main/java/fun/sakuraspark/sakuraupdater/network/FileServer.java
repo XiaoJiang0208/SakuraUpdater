@@ -1,58 +1,40 @@
 package fun.sakuraspark.sakuraupdater.network;
 
-import static fun.sakuraspark.sakuraupdater.network.MsgType.*;
-
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.RandomAccessFile;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
-import com.mojang.logging.LogUtils;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 import fun.sakuraspark.sakuraupdater.config.DataConfig;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.stream.ChunkedFile;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.util.CharsetUtil;
 
 
 
 public class FileServer {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileServer.class);
     private final int port;
-    private Channel serverChannel;
-    private EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
+    private HttpServer httpServer;
     private boolean isRunning = false;
 
     // 存储所有可用文件信息
     private final Map<String, File> availableFiles = new HashMap<>();
-    
 
     public FileServer(int port) {
         this.port = port;
@@ -62,35 +44,24 @@ public class FileServer {
      * 启动文件服务器
      */
     public void start() {
-        bossGroup = new NioEventLoopGroup();
-        workerGroup = new NioEventLoopGroup();
-
         try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 100)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) {
-                        ChannelPipeline p = ch.pipeline();
-                        // 添加基于长度的解码器，处理分包问题
-                        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
-                        p.addLast(new LengthFieldPrepender(4));
-                        p.addLast(new ChunkedWriteHandler());
-                        p.addLast(new FileServerHandler());
-                    }
-                });
-
-            ChannelFuture f = b.bind(port).sync();
-            serverChannel = f.channel();
+            httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+            
+            // 创建不同的处理器
+            httpServer.createContext("/heartbeat", new HeartBeatHandler());
+            httpServer.createContext("/updateList", new UpdateListHandler());
+            httpServer.createContext("/file", new FileDownloadHandler());
+            httpServer.createContext("/upload", new FileUploadHandler());
+            
+            // 设置线程池大小
+            httpServer.setExecutor(java.util.concurrent.Executors.newFixedThreadPool(10));
+            
+            httpServer.start();
             isRunning = true;
             LOGGER.info("File server started on port: {}", port);
-        } catch (InterruptedException e) {
-            shutdown();
+        } catch (IOException e) {
             LOGGER.error("Failed to start file server", e);
-            Thread.currentThread().interrupt();
+            shutdown();
         }
     }
 
@@ -103,203 +74,263 @@ public class FileServer {
      */
     public void shutdown() {
         isRunning = false;
-        if (serverChannel != null) {
-            serverChannel.close();
+        if (httpServer != null) {
+            httpServer.stop(0);
         }
-        if (bossGroup != null) {
-            bossGroup.shutdownGracefully();
+        LOGGER.info("File server stopped.");
+    }
+
+
+    /**
+     * 心跳处理器
+     */
+    private class HeartBeatHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                String response = "OK";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "text/plain;charset=utf-8");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(responseBytes);
+                }
+                
+                LOGGER.info("Heartbeat received and responded.");
+            } else {
+                sendError(exchange, 405, "Method Not Allowed");
+            }
         }
-        if (workerGroup != null) {
-            workerGroup.shutdownGracefully();
-        }
-        LOGGER.info("文件服务器已关闭");
     }
 
     /**
-     * 文件服务器处理器
+     * 更新列表处理器
      */
-    private class FileServerHandler extends SimpleChannelInboundHandler<ByteBuf> {
+    private class UpdateListHandler implements HttpHandler {
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-            // 处理接收到的消息
-            Byte request = msg.readByte();
-
-            // 处理不同类型的请求
-            switch (request) {
-                case MSG_TYPE_GET_UPDATE_LIST:
-                    sendUpdateList(ctx, msg);
-                    break;
-                case MSG_TYPE_GET_FILE:
-                    sendFile(ctx, msg);
-                    break;
-                default:
-                    break;
-            }
-            // if (msg.readByte() == MSG_TYPE_GET_UPDATE_LIST) {
-            //     // 发送文件列表
-            //     sendUpdateList(ctx);
-            // } else if (msg.readByte() == MSG_TYPE_GET_FILE) {
-            //     // 发送请求的文件
-            //     sendFile(ctx, msg);
-            // } else if (msg.readByte() == MSG_TYPE_UPLOAD_FILE) {
-            //     // 准备接收上传的文件
-            //     // 解析文件名和文件大小
-            //     String[] parts = request.substring(7).split(":");
-            //     if (parts.length == 2) {
-            //         String fileName = parts[0];
-            //         // 文件上传准备
-            //         ctx.writeAndFlush(("READY:" + fileName).getBytes());
-            //     }
-            // } else if (request.startsWith("FILE:")) {
-            //     // 接收文件内容
-            //     String fileName = request.substring(5, request.indexOf(":DATA:"));
-            //     byte[] fileData = msg;
-            //     saveUploadedFile(fileName, fileData);
-            //     ctx.writeAndFlush("OK".getBytes());
-            // }
-        }
-
-        /**
-         * 发送最新数据
-         */ 
-        private void sendUpdateList(ChannelHandlerContext ctx, ByteBuf msg) {
-            StringBuilder sb = new StringBuilder();
-            String version = msg.readableBytes() > 0 ? msg.toString(CharsetUtil.UTF_8) : null; // 获取版本号
-            Data data = null;
-            if (version == null) {
-                data = DataConfig.getLastData();
-            } else if (!version.isEmpty()) {
-                data = DataConfig.getDataByVersion(version);
-            }
-            if (data == null) {
-                sb.append("{}");
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String requestBody = readRequestBody(exchange);
+                    JsonObject jsonRequest = JsonParser.parseString(requestBody).getAsJsonObject();
+                    String version = jsonRequest.has("version") ? jsonRequest.get("version").getAsString() : null; //获取版本号
+                    
+                    Data data = null;
+                    if (version == null || version.isEmpty()) {
+                        data = DataConfig.getLastData();
+                    } else {
+                        data = DataConfig.getDataByVersion(version);
+                    }
+                    
+                    String response;
+                    if (data == null) {
+                        response = "{}";
+                    } else {
+                        response = new Gson().toJson(data);
+                    }
+                    
+                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json;charset=utf-8");
+                    exchange.sendResponseHeaders(200, responseBytes.length);
+                    
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(responseBytes);
+                    }
+                    
+                    LOGGER.debug("Sent update list for version: {}", version);
+                } catch (Exception e) {
+                    LOGGER.error("Error processing update list request", e);
+                    sendError(exchange, 400, "Invalid request format");
+                }
             } else {
-                sb.append(new Gson().toJson(data));
-            }
-            ByteBuf response = Unpooled.buffer(1);
-            response.writeByte(MSG_TYPE_UPDATE_LIST);
-            response.writeBytes(sb.toString().getBytes(CharsetUtil.UTF_8));
-            ctx.writeAndFlush(response);
-        }
-        
-
-        /**
-         * 发送文件
-         */
-        private void sendFile(ChannelHandlerContext ctx, ByteBuf filePath) {
-            String file_name = filePath.toString(CharsetUtil.UTF_8);
-            boolean fileFound = false;
-            for (PathData pathData : DataConfig.getLastData().paths) {
-                for (FileData fileData : pathData.files) {
-                    // 检查文件名是否匹配
-                    if (fileData.sourcePath.equals(file_name)) {
-                        fileFound = true;
-                        break;
-                    }
-                }
-                if (fileFound) {
-                    break;
-                }
-            }
-            
-            if (!fileFound) {
-                // 发送错误响应
-                ByteBuf response = Unpooled.buffer();
-                response.writeByte(MSG_TYPE_FILE);
-                response.writeLong(-1); // 文件大小为-1表示错误
-                response.writeInt("File not found in list".getBytes(CharsetUtil.UTF_8).length);
-                response.writeBytes("File not found in list".getBytes(CharsetUtil.UTF_8));
-                ctx.writeAndFlush(response);
-                return;
-            }
-
-            File file = new File(file_name);
-
-            if (file == null || !file.exists()) {
-                // 发送错误响应
-                ByteBuf response = Unpooled.buffer();
-                response.writeByte(MSG_TYPE_FILE);
-                response.writeLong(-1); // 文件大小为-1表示错误
-                response.writeInt("File not found in server".getBytes(CharsetUtil.UTF_8).length);
-                response.writeBytes("File not found in server".getBytes(CharsetUtil.UTF_8));
-                ctx.writeAndFlush(response);
-                LOGGER.warn("This file in list but not found in local: {}", file_name);
-                return;
-            }
-            
-            try {
-                RandomAccessFile raf = new RandomAccessFile(file, "r");
-                long file_length = raf.length();
-
-                // 1. 发送消息头 (类型, 文件名长度, 文件名, 文件内容长度)
-                ByteBuf header = Unpooled.buffer();
-                header.writeByte(MSG_TYPE_FILE);
-                header.writeLong(file_length);
-                header.writeInt(file.getName().getBytes(CharsetUtil.UTF_8).length);
-                header.writeBytes(file.getName().getBytes(CharsetUtil.UTF_8));
-                ctx.write(header); // 使用 write 而不是 writeAndFlush
-                
-                // 2. 发送文件内容
-                // 使用 ChunkedFile 进行分块传输
-                ChannelFuture sendFileFuture = ctx.writeAndFlush(new ChunkedFile(raf, 0, file_length, 8192));
-                
-                sendFileFuture.addListener((ChannelFutureListener) future -> {
-                    try {
-                        if (future.isSuccess()) {
-                            LOGGER.debug("Send file success: {}, size: {} byte", file_name, file_length);
-                        } else {
-                            LOGGER.error("Send file failed: {}", file_name, future.cause());
-                        }
-                    } finally {
-                        // ChunkedFile 会自动关闭 RandomAccessFile，但为了安全起见还是手动关闭
-                        try {
-                            if (raf.getChannel().isOpen()) {
-                                raf.close();
-                            }
-                        } catch (Exception e) {
-                            LOGGER.debug("Close file handle failed", e);
-                        }
-                    }
-                });
-            } catch (Exception e) {
-                LOGGER.error("Send file failed: {}", file_name, e);
-                // 发送错误响应
-                ByteBuf response = Unpooled.buffer();
-                response.writeByte(MSG_TYPE_FILE);
-                response.writeLong(-1); // 文件大小为-1表示错误
-                response.writeInt(file_name.getBytes(CharsetUtil.UTF_8).length);
-                response.writeBytes(file_name.getBytes(CharsetUtil.UTF_8));
-                ctx.writeAndFlush(response);
+                sendError(exchange, 405, "Method Not Allowed");
             }
         }
+    }
 
-        /**
-         * 保存上传的文件
-         */
-        private void saveUploadedFile(String fileName, byte[] fileData) {
-            try {
-                File file = new File(fileName);
-                // 确保父目录存在
-                if (!file.getParentFile().exists()) {
-                    file.getParentFile().mkdirs();
-                }
-                
-                try (FileOutputStream fos = new FileOutputStream(file)) {
-                    fos.write(fileData);
-                }
-                
-                // 更新可用文件列表
-                availableFiles.put(fileName, file);
-                LOGGER.info("已保存上传的文件: {}, 大小: {} 字节", fileName, fileData.length);
-            } catch (Exception e) {
-                LOGGER.error("保存上传文件失败: {}", fileName, e);
-            }
-        }
-
+    /**
+     * 文件下载处理器
+     */
+    private class FileDownloadHandler implements HttpHandler {
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            LOGGER.error("处理请求时出错", cause);
-            ctx.close();
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String requestBody = readRequestBody(exchange);
+                    JsonObject jsonRequest = JsonParser.parseString(requestBody).getAsJsonObject();
+                    String fileName = jsonRequest.has("file") ? jsonRequest.get("file").getAsString() : null;
+                    
+                    if (fileName == null || fileName.isEmpty()) {
+                        sendError(exchange, 400, "Missing file parameter");
+                        return;
+                    }
+                    
+                    // 验证文件是否在允许列表中
+                    boolean fileFound = false;
+                    Data lastData = DataConfig.getLastData();
+                    if (lastData != null) {
+                        for (PathData pathData : lastData.paths) {
+                            for (FileData fileData : pathData.files) {
+                                if (fileData.sourcePath.equals(fileName)) {
+                                    fileFound = true;
+                                    break;
+                                }
+                            }
+                            if (fileFound) {
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!fileFound) {
+                        sendError(exchange, 403, "File not found in list");
+                        return;
+                    }
+                    
+                    File file = new File(fileName);
+                    if (!file.exists() || !file.isFile()) {
+                        LOGGER.warn("This file in list but not found in local, please don't forget commit: {}", fileName);
+                        sendError(exchange, 404, "File not found in server");
+                        return;
+                    }
+                    
+                    try {
+                        long fileSize = file.length();
+                        exchange.getResponseHeaders().set("Content-Type", "application/octet-stream");
+                        exchange.getResponseHeaders().set("Content-Length", String.valueOf(fileSize));
+                        String encodedFileName = java.net.URLEncoder.encode(file.getName(), StandardCharsets.UTF_8);
+                        exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
+                        exchange.sendResponseHeaders(200, fileSize);
+                        
+                        try (OutputStream os = exchange.getResponseBody();
+                             FileInputStream fis = new FileInputStream(file)) {
+                            byte[] buffer = new byte[8192];
+                            int bytesRead;
+                            while ((bytesRead = fis.read(buffer)) != -1) {
+                                os.write(buffer, 0, bytesRead);
+                            }
+                        }
+                        
+                        LOGGER.debug("Send file success: {}", fileName);
+                    } catch (Exception e) {
+                        LOGGER.error("Send file failed: {}", fileName, e);
+                        if (!exchange.getResponseHeaders().containsKey("Content-Type")) {
+                            sendError(exchange, 500, "Internal Server Error");
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error processing file download request", e);
+                    sendError(exchange, 400, "Invalid request format");
+                }
+            } else {
+                sendError(exchange, 405, "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * 文件上传处理器
+     */
+    private class FileUploadHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String requestBody = readRequestBody(exchange);
+                    JsonObject jsonRequest = JsonParser.parseString(requestBody).getAsJsonObject();
+                    String fileName = jsonRequest.has("file") ? jsonRequest.get("file").getAsString() : null;
+                    String fileContent = jsonRequest.has("content") ? jsonRequest.get("content").getAsString() : null;
+                    
+                    if (fileName == null || fileName.isEmpty()) {
+                        sendError(exchange, 400, "Missing file parameter");
+                        return;
+                    }
+                    
+                    if (fileContent == null) {
+                        sendError(exchange, 400, "Missing content parameter");
+                        return;
+                    }
+                    
+                    saveUploadedFileFromJson(fileName, fileContent);
+                    
+                    JsonObject response = new JsonObject();
+                    response.addProperty("status", "success");
+                    response.addProperty("message", "File uploaded successfully");
+                    response.addProperty("file", fileName);
+                    
+                    String responseStr = new Gson().toJson(response);
+                    byte[] responseBytes = responseStr.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json;charset=utf-8");
+                    exchange.sendResponseHeaders(200, responseBytes.length);
+                    
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(responseBytes);
+                    }
+                    
+                    LOGGER.info("File uploaded successfully: {}", fileName);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to upload file", e);
+                    sendError(exchange, 500, "Failed to upload file");
+                }
+            } else {
+                sendError(exchange, 405, "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * 发送错误响应
+     */
+    private void sendError(HttpExchange exchange, int code, String message) throws IOException {
+        String response = message;
+        byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "text/plain;charset=utf-8");
+        exchange.sendResponseHeaders(code, responseBytes.length);
+        
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(responseBytes);
+        }
+    }
+
+    /**
+     * 保存上传的文件（从JSON base64内容）
+     */
+    private void saveUploadedFileFromJson(String fileName, String fileContent) {
+        try {
+            File file = new File(fileName);
+            // 确保父目录存在
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
+            
+            // 解析 Base64 编码的内容
+            byte[] decodedContent = java.util.Base64.getDecoder().decode(fileContent);
+            
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(decodedContent);
+            }
+            
+            // 更新可用文件列表
+            availableFiles.put(fileName, file);
+            LOGGER.debug("已保存上传的文件: {}", fileName);
+        } catch (Exception e) {
+            LOGGER.error("保存上传文件失败: {}", fileName, e);
+        }
+    }
+
+    /**
+     * 读取请求体
+     */
+    private String readRequestBody(HttpExchange exchange) throws IOException {
+        try (InputStream is = exchange.getRequestBody()) {
+            byte[] buffer = new byte[8192];
+            StringBuilder sb = new StringBuilder();
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                sb.append(new String(buffer, 0, bytesRead, StandardCharsets.UTF_8));
+            }
+            return sb.toString();
         }
     }
 }

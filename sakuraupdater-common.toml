@@ -1,0 +1,15 @@
+#The port of the file server, default is 25564.
+#Range: 1 ~ 65535
+port = 25564
+#A list of sync directories, each entry should be in the format 'targetpath:mode[:sourcepath:sourcepath2:...]', e.g. 'mod:mirror' or 'config:push:clientconfig'.
+#The 'targetpath' is the client target path of sync, and 'sourcepath' is the server source path of sync.
+#The 'sourcepath' is optional, if not provided, it will be the same as 'targetpath'.
+#'mode' can be 'mirror' or 'push'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.
+#This is used to determine which directories to sync with the client.
+#SYNC_DIR = [
+#    'example:mirror', // it same as 'example:mirror:example'
+#    'mods:mirror:mods:clientmods',
+#    'config:push:clientconfig'
+#]
+SYNC_DIR = []
+

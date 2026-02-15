@@ -3,6 +3,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.neoforged.moddev.legacyforge' version '2.0.91'
+    // id 'com.github.johnrengelman.shadow' version '8.1.1' // 不再需要 Shadow 插件
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -58,13 +59,14 @@ legacyForge {
             client()
             // 设置不同的游戏目录
             gameDirectory = project.file('run-client')
-
+            //logLevel = org.slf4j.event.Level.DEBUG
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
         }
 
         server {
             server()
+            //logLevel = org.slf4j.event.Level.DEBUG
             //programArgument '--nogui'
             systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
         }
@@ -95,6 +97,9 @@ legacyForge {
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
+            
+            // Enable debug logging in the console
+            systemProperty 'forge.logging.console.level', 'debug'
 
             // Recommended logging level for the console
             // You can set various levels here.
@@ -156,6 +161,23 @@ dependencies {
 
     
     //modLocalRuntime 'maven.modrinth:do-a-barrel-roll:3.5.6+1.20.1-forge'
+
+    // SQLite 数据库驱动
+    // 使用 Jar-in-Jar 引入，确保开发环境（compile/runtime）可用，且打包时包含在 JarJar 中
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
+    additionalRuntimeClasspath 'org.xerial:sqlite-jdbc:3.46.0.0'
+    jarJar(implementation(group: 'org.xerial', name: 'sqlite-jdbc')) {
+        version {
+            // Version used in your workspace and bundled in mod jar
+            prefer '3.46.0.0'
+        }
+    }
+
+    // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
+    implementation 'com.electronwill.night-config:toml:3.8.1'
+    implementation 'com.electronwill.night-config:core:3.8.1'
+    additionalRuntimeClasspath 'com.electronwill.night-config:toml:3.8.1'
+    additionalRuntimeClasspath 'com.electronwill.night-config:core:3.8.1'
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
@@ -168,13 +190,14 @@ mixin {
 dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
+*/
 
 jar {
     manifest.attributes([
-            "MixinConfigs": "${mod_id}.mixins.json"
+            'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterServerOnly'
     ])
+    
 }
-*/
 
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
@@ -228,3 +251,16 @@ idea {
         downloadJavadoc = true
     }
 }
+// tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+//     archiveClassifier.set('') // 生成不带 -all 后缀的 jar，直接替换原 jar
+//     configurations = [project.configurations.shade]
+//     // 排除不必要的文件
+//     exclude 'META-INF/maven/**'
+//     exclude 'META-INF/LICENSE*'
+//     
+//     // 处理 SPI 服务文件 (如 JDBC 驱动)
+//     mergeServiceFiles()
+//     // 重定位包名，防止与其他 Mod 的 SQLite 驱动冲突
+//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
+//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
+// }

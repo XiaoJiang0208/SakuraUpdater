@@ -30,7 +30,7 @@ public class ServerConfig {
     
     // post
     private static final ForgeConfigSpec.IntValue PORT = BUILDER
-            .comment("The port of the file server, default is 25564.").defineInRange("port", 25564, 1, 65535);
+            .comment("----IMPORTANT!!! Needs to restart!!!----\nThe port of the file server, default is 25564.").defineInRange("port", 25564, 1, 65535);
 
     // a list of strings that are treated as sync directories
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> SYNC_DIR = BUILDER
@@ -49,8 +49,6 @@ public class ServerConfig {
     // static final ForgeConfigSpec for the server config
 
     public static final ForgeConfigSpec SPEC = BUILDER.build();
-
-    public static String update_time;
 
     public static int port;
 
@@ -82,5 +80,25 @@ public class ServerConfig {
     public static void onLoad(final ModConfigEvent.Loading event) {
         port = PORT.get();
         SakuraUpdaterServer.getInstance().runServer();
+    }
+
+    /**
+     * 独立模式初始化 - 已弃用
+     * <p>
+     * 此方法不可行：ServerConfig 的静态字段依赖 ForgeConfigSpec，
+     * 类加载时即会触发 NoClassDefFoundError。
+     * </p>
+     * <p>
+     * 请使用 {@link StandaloneServerConfig#initialize()} 作为脱离 Forge 的替代方案，
+     * 它使用 YAML 配置文件，完全不依赖 Forge/Minecraft。
+     * </p>
+     *
+     * @deprecated 使用 {@link StandaloneServerConfig} 替代
+     */
+    @Deprecated
+    public static void initializeStandalone() {
+        throw new UnsupportedOperationException(
+                "ServerConfig 依赖 ForgeConfigSpec，无法在脱离 Forge 时使用。" +
+                "请使用 StandaloneServerConfig.initialize() 替代。");
     }
 }
