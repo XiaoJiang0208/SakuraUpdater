@@ -173,41 +173,38 @@ dependencies {
     }
 
     // GSON - 用于独立模式（脱离 Forge）的 JSON 配置解析
-    implementation 'com.google.code.gson:gson:2.10'
-    additionalRuntimeClasspath 'com.google.code.gson:gson:2.10'
-    jarJar(implementation(group: 'com.google.code.gson', name: 'gson')) {
+    compileOnly 'com.google.code.gson:gson:2.10'
+    jarJar(group: 'com.google.code.gson', name: 'gson') {
         version {
             prefer '2.10'
         }
     }
 
-    // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
-    implementation 'com.electronwill.night-config:toml:3.8.1'
-    implementation 'com.electronwill.night-config:core:3.8.1'
-    additionalRuntimeClasspath 'com.electronwill.night-config:toml:3.8.1'
-    additionalRuntimeClasspath 'com.electronwill.night-config:core:3.8.1'
-    jarJar(implementation(group: 'com.electronwill.night-config', name: 'toml')) {
+    // // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
+    compileOnly 'com.electronwill.night-config:toml:3.8.1'
+    compileOnly 'com.electronwill.night-config:core:3.8.1'
+    jarJar(group: 'com.electronwill.night-config', name: 'toml') {
         version {
             prefer '3.8.1'
         }
     }
-    jarJar(implementation(group: 'com.electronwill.night-config', name: 'core')) {
+    jarJar(group: 'com.electronwill.night-config', name: 'core') {
         version {
             prefer '3.8.1'
         }
     }
 
-    // Standalone logging
-    implementation 'org.slf4j:slf4j-api:2.0.12'
-    implementation 'org.slf4j:slf4j-simple:2.0.12'
-    additionalRuntimeClasspath 'org.slf4j:slf4j-api:2.0.12'
-    additionalRuntimeClasspath 'org.slf4j:slf4j-simple:2.0.12'
-    jarJar(implementation(group: 'org.slf4j', name: 'slf4j-api')) {
+    // Standalone logging - only needed for standalone JAR, not dev environment
+    // Use compileOnly to have the classes available at compile time
+    compileOnly 'org.slf4j:slf4j-api:2.0.12'
+    compileOnly 'org.slf4j:slf4j-simple:2.0.12'
+    // JarJar will include them in the final JAR for standalone mode
+    jarJar(group: 'org.slf4j', name: 'slf4j-api') {
         version {
             prefer '2.0.12'
         }
     }
-    jarJar(implementation(group: 'org.slf4j', name: 'slf4j-simple')) {
+    jarJar(group: 'org.slf4j', name: 'slf4j-simple') {
         version {
             prefer '2.0.12'
         }

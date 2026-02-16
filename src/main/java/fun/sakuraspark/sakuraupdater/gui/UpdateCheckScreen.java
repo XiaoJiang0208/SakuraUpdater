@@ -50,6 +50,7 @@ public class UpdateCheckScreen extends Screen {
                     return 3; // Only server update
                 }
             } catch (Exception e) {
+                LOGGER.error("Error during update check", e);
                 return -1;
             }
         }, Util.backgroundExecutor()) // 使用 Minecraft 的后台线程池

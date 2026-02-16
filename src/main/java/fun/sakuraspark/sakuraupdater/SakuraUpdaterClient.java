@@ -132,7 +132,7 @@ public class SakuraUpdaterClient {
                             CurrentPathData.files.forEach(file -> {
                                 if (!pathData.files.stream()
                                         .anyMatch(fileData -> file.targetPath.equals(fileData.targetPath)
-                                                && fileData.md5.equals(MD5.calculateMD5(new File(file.targetPath))))) { // 判断是否存在和对比md5
+                                                && new File(file.targetPath).exists() && fileData.md5.equals(MD5.calculateMD5(new File(file.targetPath))))) { // 判断是否存在和对比md5
                                     LOGGER.warn("File {} will be deleted in push mode.", file.targetPath);
                                     integrityCheckResult.getFirst().add(new File(file.targetPath));
                                 }
