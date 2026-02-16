@@ -31,12 +31,12 @@ public class SakuraUpdater {
         //NeoForge.EVENT_BUS.register(this);
 
         if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
-            LOGGER.info("Try run SakuraUpdater Server");
+            LOGGER.debug("Try run SakuraUpdater Server");
             serverInstance = new SakuraUpdaterServer();
             NeoForge.EVENT_BUS.register(serverInstance);
         }
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            LOGGER.info("Try run SakuraUpdater Client");
+            LOGGER.debug("Try run SakuraUpdater Client");
             clientInstance = new SakuraUpdaterClient();
             NeoForge.EVENT_BUS.register(clientInstance);
         }
@@ -45,13 +45,12 @@ public class SakuraUpdater {
     // private void commonSetup(final FMLCommonSetupEvent event)
     // {
     // // Some common setup code
-    // LOGGER.info("HELLO FROM COMMON SETUP");
+    // LOGGER.debug("HELLO FROM COMMON SETUP");
 
     // if (Config.logDirtBlock)
-    // LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
+    // LOGGER.debug("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
 
-    // LOGGER.info(Config.magicNumberIntroduction + Config.magicNumber);
-
+    // LOGGER.debug(Config.magicNumberIntroduction + Config.magicNumber);
     // Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
     // }
 

@@ -51,6 +51,7 @@ public class UpdateCheckScreen extends Screen {
                     return 3; // Only server update
                 }
             } catch (Exception e) {
+                LOGGER.error("Error during update check", e);
                 return -1;
             }
         }, Util.backgroundExecutor()) // 使用 Minecraft 的后台线程池
@@ -81,7 +82,6 @@ public class UpdateCheckScreen extends Screen {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
-                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         } else if (updateStatus == 1) {
@@ -93,14 +93,12 @@ public class UpdateCheckScreen extends Screen {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
-                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         } else {
             this.addRenderableWidget(
                     Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.ok"), button -> {
                         // 点击按钮后关闭当前界面
-                        SakuraUpdaterClient.getInstance().disconnectFromServer();
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         }

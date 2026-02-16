@@ -55,13 +55,14 @@ neoForge {
             client()
             // 设置不同的游戏目录
             gameDirectory = project.file('run-client')
-
+            //logLevel = org.slf4j.event.Level.DEBUG
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         server {
             server()
+            //logLevel = org.slf4j.event.Level.DEBUG
             //programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
@@ -92,6 +93,9 @@ neoForge {
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
+            
+            // Enable debug logging in the console
+            systemProperty 'forge.logging.console.level', 'debug'
 
             // Recommended logging level for the console
             // You can set various levels here.
@@ -153,6 +157,55 @@ dependencies {
 
     
     //modLocalRuntime 'maven.modrinth:do-a-barrel-roll:3.5.6+1.20.1-forge'
+
+    // SQLite 数据库驱动
+    // 使用 Jar-in-Jar 引入，确保开发环境（compile/runtime）可用，且打包时包含在 JarJar 中
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
+    additionalRuntimeClasspath 'org.xerial:sqlite-jdbc:3.46.0.0'
+    jarJar(implementation(group: 'org.xerial', name: 'sqlite-jdbc')) {
+        version {
+            // Version used in your workspace and bundled in mod jar
+            prefer '3.46.0.0'
+        }
+    }
+
+    // GSON - 用于独立模式（脱离 Forge）的 JSON 配置解析
+    compileOnly 'com.google.code.gson:gson:2.10'
+    jarJar(group: 'com.google.code.gson', name: 'gson') {
+        version {
+            prefer '2.10'
+        }
+    }
+
+    // // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
+    compileOnly 'com.electronwill.night-config:toml:3.8.1'
+    compileOnly 'com.electronwill.night-config:core:3.8.1'
+    jarJar(group: 'com.electronwill.night-config', name: 'toml') {
+        version {
+            prefer '3.8.1'
+        }
+    }
+    jarJar(group: 'com.electronwill.night-config', name: 'core') {
+        version {
+            prefer '3.8.1'
+        }
+    }
+
+    // Standalone logging - only needed for standalone JAR, not dev environment
+    // Use compileOnly to have the classes available at compile time
+    compileOnly 'org.slf4j:slf4j-api:2.0.12'
+    compileOnly 'org.slf4j:slf4j-simple:2.0.12'
+    // JarJar will include them in the final JAR for standalone mode
+    jarJar(group: 'org.slf4j', name: 'slf4j-api') {
+        version {
+            prefer '2.0.12'
+        }
+    }
+    jarJar(group: 'org.slf4j', name: 'slf4j-simple') {
+        version {
+            prefer '2.0.12'
+        }
+    }
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
@@ -165,13 +218,13 @@ mixin {
 dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
+*/
 
 jar {
     manifest.attributes([
-            "MixinConfigs": "${mod_id}.mixins.json"
+            'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterBootstrap'
     ])
 }
-*/
 
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
@@ -225,3 +278,16 @@ idea {
         downloadJavadoc = true
     }
 }
+// tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+//     archiveClassifier.set('') // 生成不带 -all 后缀的 jar，直接替换原 jar
+//     configurations = [project.configurations.shade]
+//     // 排除不必要的文件
+//     exclude 'META-INF/maven/**'
+//     exclude 'META-INF/LICENSE*'
+//     
+//     // 处理 SPI 服务文件 (如 JDBC 驱动)
+//     mergeServiceFiles()
+//     // 重定位包名，防止与其他 Mod 的 SQLite 驱动冲突
+//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
+//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
+// }

@@ -132,7 +132,7 @@ public class SakuraUpdaterClient {
                             CurrentPathData.files.forEach(file -> {
                                 if (!pathData.files.stream()
                                         .anyMatch(fileData -> file.targetPath.equals(fileData.targetPath)
-                                                && fileData.md5.equals(MD5.calculateMD5(new File(file.targetPath))))) { // 判断是否存在和对比md5
+                                                && new File(file.targetPath).exists() && fileData.md5.equals(MD5.calculateMD5(new File(file.targetPath))))) { // 判断是否存在和对比md5
                                     LOGGER.warn("File {} will be deleted in push mode.", file.targetPath);
                                     integrityCheckResult.getFirst().add(new File(file.targetPath));
                                 }
@@ -207,26 +207,18 @@ public class SakuraUpdaterClient {
 
     public void connectToServer() {
         if (file_client != null) {
-            if (file_client.isConnected()) {
+            if (file_client.heartbeat()) {
                 LOGGER.warn("Already connected to the server.");
                 return;
             }
-            file_client.disconnect();
-            file_client.connect();
             return;
         }
         file_client = new FileClient(ClientConfig.host, ClientConfig.port);
-        file_client.connect();
-        LOGGER.info("Connected to SakuraUpdater Server at {}:{}", ClientConfig.host, ClientConfig.port);
-    }
 
-    public void disconnectFromServer() {
-        if (file_client == null || !file_client.isConnected()) {
-            LOGGER.warn("Not connected to the server.");
+        if (file_client.heartbeat()) {
+            LOGGER.info("Connected to SakuraUpdater Server at {}:{}", ClientConfig.host, ClientConfig.port);
             return;
         }
-        file_client.disconnect();
-        LOGGER.info("Disconnected from SakuraUpdater Server.");
     }
 
     @SubscribeEvent

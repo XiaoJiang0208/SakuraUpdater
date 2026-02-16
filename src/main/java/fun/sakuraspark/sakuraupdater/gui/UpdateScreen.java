@@ -54,7 +54,7 @@ public class UpdateScreen extends Screen {
 
     @Override
     public void init() {
-        if (updateStatus == -1) {
+        if (updateStatus != -1) {
             // 如果有更新进度，重建界面添加按钮
             if (updateStatus != 0) {
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.retry",
@@ -63,19 +63,16 @@ public class UpdateScreen extends Screen {
                         }).bounds(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.cancel",
                         updateStatus), button -> {
-                            SakuraUpdaterClient.getInstance().disconnectFromServer();
                             Minecraft.getInstance().setScreen(new TitleScreen(true));
                         }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
             } else {
 
                 this.addRenderableWidget(
                         Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.restartnow"), button -> {
-                            SakuraUpdaterClient.getInstance().disconnectFromServer();
                             Minecraft.getInstance().stop();
                         }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
                 this.addRenderableWidget(Button
                         .builder(Component.translatable("gui.sakuraupdater.UpdateScreen.restartlater"), button -> {
-                            SakuraUpdaterClient.getInstance().disconnectFromServer();
                             Minecraft.getInstance().setScreen(new TitleScreen(true));
                         }).bounds(this.width / 2 - 100, this.height / 2 + 80, 200, 20).build());
             }
