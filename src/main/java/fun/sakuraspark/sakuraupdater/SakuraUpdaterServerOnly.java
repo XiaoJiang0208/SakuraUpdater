@@ -1,10 +1,14 @@
 package fun.sakuraspark.sakuraupdater;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +17,6 @@ import fun.sakuraspark.sakuraupdater.config.DataConfig;
 import fun.sakuraspark.sakuraupdater.config.StandaloneServerConfig;
 import fun.sakuraspark.sakuraupdater.network.FileServer;
 import fun.sakuraspark.sakuraupdater.utils.ServerCommandsHelper;
-import net.minecraftforge.common.ForgeConfig.Server;
 
 /**
  * 独立模式入口 - 脱离 Forge/Minecraft 运行
@@ -21,7 +24,67 @@ import net.minecraftforge.common.ForgeConfig.Server;
  */
 public class SakuraUpdaterServerOnly {
 
+    private static final class PromptManager {
+        public final AtomicBoolean awaitingInput = new AtomicBoolean(false);
+        public final String promptText;
+
+        private PromptManager(String promptText) {
+            this.promptText = promptText;
+        }
+
+        private void showPrompt(PrintStream out) {
+            awaitingInput.set(true);
+            out.print(promptText);
+            out.flush();
+        }
+
+        private void clearPromptState() {
+            awaitingInput.set(false);
+        }
+
+        private void reprintPromptIfNeeded(PrintStream out) {
+            if (awaitingInput.get()) {
+                out.print(promptText);
+                out.flush();
+            }
+        }
+    }
+
+    private static final class PromptingOutputStream extends OutputStream {
+        private final PrintStream delegate;
+        private final PromptManager promptManager;
+
+        private PromptingOutputStream(PrintStream delegate, PromptManager promptManager) {
+            this.delegate = delegate;
+            this.promptManager = promptManager;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            delegate.write(b);
+            if (b == '\n') {
+                promptManager.reprintPromptIfNeeded(delegate);
+            }
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            delegate.write(b, off, len);
+            for (int i = off; i < off + len; i++) {
+                if (b[i] == '\n') {
+                    promptManager.reprintPromptIfNeeded(delegate);
+                    break;
+                }
+            }
+        }
+    }
+
+    private static PrintStream wrapPrintStream(PrintStream original, PromptManager promptManager) {
+        return new PrintStream(new PromptingOutputStream(original, promptManager), true, StandardCharsets.UTF_8);
+    }
+
     public static class CommandDispatcher {
+        // 这里实现一个简单的命令解析器，根据输入的命令调用 ServerCommandsHelper 中的方法
         private String command;
         private List<CommandDispatcher> arge_list = new ArrayList<>();
         private Consumer<String> command_handler;
@@ -62,28 +125,44 @@ public class SakuraUpdaterServerOnly {
          * 链式传递下去的是命令字符串中去掉当前命令头部的部分，例如 "sakuraupdater data list" 传递给 "data" 的是 "list"
          * 
          * @param command 输入的完整命令字符串
+         * @return 如果命令被处理返回 true，否则返回 false
          */
-        public void dispatch(String command) {
-            // 这里可以实现一个简单的命令解析器，根据输入的命令调用 ServerCommandsHelper 中的方法
-            // 例如，输入 "data list" 可以调用 ServerCommandsHelper.buildDataListString()
+        public boolean dispatch(String command) {
+            // TODO: 诡异的处理方式🤣
             String[] parts = command.split(" ", 2);
-            if (parts[0].equals(this.command)) {
+            boolean handled = false;
+            if (this.command == null || parts[0].equals(this.command)) {
                 if (this.command_handler != null) {
-                    this.command_handler.accept(command);
+                    this.command_handler.accept(this.command == null ? command : parts.length > 1 ? parts[1] : "");
+                    handled = true;
                 }
                 if (parts.length > 1) {
                     for (CommandDispatcher dispatcher : arge_list) {
-                        dispatcher.dispatch(parts[1]);
+                        if (dispatcher.dispatch(this.command == null ? command : parts[1])) {
+                            handled = true;
+                        }
                     }
                 }
             }
+            return handled;
         }
 
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SakuraUpdaterServerOnly.class);
 
-    public static void main(String[] args) {
+    public static int main(String[] args) {
+        PromptManager promptManager = new PromptManager("> ");
+        System.setOut(wrapPrintStream(System.out, promptManager));
+        System.setErr(wrapPrintStream(System.err, promptManager));
+        System.out.println("""
+                  ____        _                    _   _           _       _            
+                 / ___|  __ _| | ___   _ _ __ __ _| | | |_ __   __| | __ _| |_ ___ _ __ 
+                 \\___ \\ / _` | |/ / | | | '__/ _` | | | | '_ \\ / _` |/ _` | __/ _ \\ '__|
+                  ___) | (_| |   <| |_| | | | (_| | |_| | |_) | (_| | (_| | ||  __/ |   
+                 |____/ \\__,_|_|\\_\\\\__,_|_|  \\__,_|\\___/| .__/ \\__,_|\\__,_|\\__\\___|_|   
+                                                        |_|                             
+                """);
         LOGGER.info("SakuraUpdater Standalone Server is starting...");
 
         // 1. 加载 YAML 配置
@@ -92,7 +171,7 @@ public class SakuraUpdaterServerOnly {
         // 2. 连接数据库
         if (!DataConfig.connectToDatabase("sakuraupdater-database.db")) {
             LOGGER.error("Failed to connect to SakuraUpdater database!");
-            return;
+            return 0;
         }
 
         // 3. 启动文件服务器
@@ -102,7 +181,7 @@ public class SakuraUpdaterServerOnly {
         fileServer.start();
 
         // 4. 设置命令分发器
-        CommandDispatcher rootDispatcher = new CommandDispatcher("sakuraupdater")
+        CommandDispatcher rootDispatcher = new CommandDispatcher(null)
                 .then(new CommandDispatcher("data")
                         .then(new CommandDispatcher("list").execute(cmd -> {
                             ServerCommandsHelper.CommandResult result = ServerCommandsHelper.buildDataListString();
@@ -121,8 +200,8 @@ public class SakuraUpdaterServerOnly {
                                         "Invalid command format. Usage: sakuraupdater data edit <version> <description>");
                                 return;
                             }
-                            String version = parts[1];
-                            String description = parts[2];
+                            String version = parts[0];
+                            String description = parts[1];
                             ServerCommandsHelper.CommandResult result = ServerCommandsHelper.editData(version,
                                     description);
                             if (result.success) {
@@ -133,12 +212,12 @@ public class SakuraUpdaterServerOnly {
                         }))
                         .then(new CommandDispatcher("show").execute(cmd -> {
                             String[] parts = cmd.split(" ", 2);
-                            if (parts.length < 2) {
+                            if (parts.length > 1) {
                                 LOGGER.warn(
                                         "Invalid command format. Usage: sakuraupdater data show <version>");
                                 return;
                             }
-                            ServerCommandsHelper.CommandResult result = ServerCommandsHelper.showData(parts[1]);
+                            ServerCommandsHelper.CommandResult result = ServerCommandsHelper.showData(parts[0]);
                             if (result.success) {
                                 LOGGER.info(result.message);
                             } else {
@@ -148,12 +227,12 @@ public class SakuraUpdaterServerOnly {
                         .then(new CommandDispatcher("delete").execute(cmd -> {
                             // 这里可以解析 cmd 获取版本参数，然后调用 ServerCommandsHelper.deleteData()
                             String[] parts = cmd.split(" ", 2);
-                            if (parts.length < 2) {
+                            if (parts.length > 1) {
                                 LOGGER.warn(
                                         "Invalid command format. Usage: sakuraupdater data delete <version>");
                                 return;
                             }
-                            ServerCommandsHelper.CommandResult result = ServerCommandsHelper.deleteData(parts[1]);
+                            ServerCommandsHelper.CommandResult result = ServerCommandsHelper.deleteData(parts[0]);
                             if (result.success) {
                                 LOGGER.info(result.message);
                             } else {
@@ -176,8 +255,8 @@ public class SakuraUpdaterServerOnly {
                                 "Invalid command format. Usage: sakuraupdater commit <version> <description>");
                         return;
                     }
-                    String version = parts[1];
-                    String description = parts[2];
+                    String version = parts[0];
+                    String description = parts[1];
                     ServerCommandsHelper.CommandResult result = ServerCommandsHelper.commitData(version,
                             description);
                     if (result.success) {
@@ -188,20 +267,37 @@ public class SakuraUpdaterServerOnly {
                 }));
 
         // 5. 监听控制台输入，分发命令
-        System.out.println("""
-                    ░█▀▀░█▀█░█░█░█░█░█▀▄░█▀█░█░█░█▀█░█▀▄░█▀█░▀█▀░█▀▀░█▀▄
-                    ░▀▀█░█▀█░█▀▄░█░█░█▀▄░█▀█░█░█░█▀▀░█░█░█▀█░░█░░█▀▀░█▀▄
-                    ░▀▀▀░▀░▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀▀▀░▀░░░▀▀░░▀░▀░░▀░░▀▀▀░▀░▀
-                    SakuraUpdater Server is ready.
-                """);
         try (Scanner scanner = new Scanner(System.in)) {
             while (true) {
-                System.out.print("> ");
+                //promptManager.showPrompt(System.out);
+                if (!scanner.hasNextLine()) {
+                    // 输入流被关闭，退出循环
+                    break;
+                }
                 String input = scanner.nextLine();
-                rootDispatcher.dispatch(input);
+                if ("exit".equalsIgnoreCase(input) || "quit".equalsIgnoreCase(input) || "stop".equalsIgnoreCase(input)) {
+                    LOGGER.info("Shutting down SakuraUpdater Standalone Server...");
+                    fileServer.shutdown();
+                    scanner.close();
+                    return 0;
+                }
+                // if ("restart".equalsIgnoreCase(input)) {
+                //     LOGGER.info("Restarting SakuraUpdater Standalone Server...");
+                //     fileServer.shutdown();
+                //     scanner.close();
+                //     return 1; // 返回 1 表示需要重启
+                // }
+                try {
+                    if (!rootDispatcher.dispatch(input)) {
+                        LOGGER.warn("Unknown command: {}", input);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error while executing command: ", e);
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Error while reading console input: ", e);
         }
+        return -1;
     }
 }

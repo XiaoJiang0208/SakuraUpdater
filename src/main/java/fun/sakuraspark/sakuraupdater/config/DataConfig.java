@@ -17,7 +17,6 @@ import com.google.gson.Gson;
 import com.mojang.logging.LogUtils;
 
 public class DataConfig {
-    //TODO: 改为使用json存储
     public static class Data {
         public String version;
         public String time;

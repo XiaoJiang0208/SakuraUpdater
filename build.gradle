@@ -3,7 +3,6 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.neoforged.moddev.legacyforge' version '2.0.91'
-    // id 'com.github.johnrengelman.shadow' version '8.1.1' // 不再需要 Shadow 插件
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -173,11 +172,46 @@ dependencies {
         }
     }
 
+    // GSON - 用于独立模式（脱离 Forge）的 JSON 配置解析
+    implementation 'com.google.code.gson:gson:2.10'
+    additionalRuntimeClasspath 'com.google.code.gson:gson:2.10'
+    jarJar(implementation(group: 'com.google.code.gson', name: 'gson')) {
+        version {
+            prefer '2.10'
+        }
+    }
+
     // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
     implementation 'com.electronwill.night-config:toml:3.8.1'
     implementation 'com.electronwill.night-config:core:3.8.1'
     additionalRuntimeClasspath 'com.electronwill.night-config:toml:3.8.1'
     additionalRuntimeClasspath 'com.electronwill.night-config:core:3.8.1'
+    jarJar(implementation(group: 'com.electronwill.night-config', name: 'toml')) {
+        version {
+            prefer '3.8.1'
+        }
+    }
+    jarJar(implementation(group: 'com.electronwill.night-config', name: 'core')) {
+        version {
+            prefer '3.8.1'
+        }
+    }
+
+    // Standalone logging
+    implementation 'org.slf4j:slf4j-api:2.0.12'
+    implementation 'org.slf4j:slf4j-simple:2.0.12'
+    additionalRuntimeClasspath 'org.slf4j:slf4j-api:2.0.12'
+    additionalRuntimeClasspath 'org.slf4j:slf4j-simple:2.0.12'
+    jarJar(implementation(group: 'org.slf4j', name: 'slf4j-api')) {
+        version {
+            prefer '2.0.12'
+        }
+    }
+    jarJar(implementation(group: 'org.slf4j', name: 'slf4j-simple')) {
+        version {
+            prefer '2.0.12'
+        }
+    }
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
@@ -194,9 +228,8 @@ dependencies {
 
 jar {
     manifest.attributes([
-            'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterServerOnly'
+            'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterBootstrap'
     ])
-    
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
