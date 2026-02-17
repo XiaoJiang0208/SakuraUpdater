@@ -64,7 +64,7 @@ now_version = ""
 ## 使用方法
 
 ### 1. 服务器管理员操作
-
+> ### 在使用独立服务端时，需去除/sakuraupdater命令前缀，直接使用commit、data命令
 #### 创建更新版本
 `/sakuraupdater commit <版本号> <描述信息/描述文件路径>`
 例如:
@@ -88,22 +88,11 @@ now_version = ""
 # 清空所有版本数据
 /sakuraupdater data clear
 ```
-#### 重新加载配置
-```
-# 重新加载服务器配置
-/sakuraupdater reload server
-
-# 重新加载数据配置
-/sakuraupdater reload data
-```
 ### 2. 客户端玩家操作
 
 #### 自动检查更新
 
 当玩家进入游戏时，如果检测到服务器有新版本，会自动弹出更新界面。
-
-#### 重新加载客户端配置
-`/sakuraupdater reload client`
 
 
 # SakuraUpdater — Usage Guide
@@ -175,7 +164,7 @@ now_version = ""
 ## Usage
 
 ### 1. Server administrator operations
-
+> ### When using the independent server, remove the /sakuraupdater command prefix and use the commit and data commands directly
 #### Create a release/commit
 `/sakuraupdater commit <version> <description-or-path-to-description-file>`
 Example:
@@ -202,22 +191,8 @@ or using a text file (minimal markdown supported):
 /sakuraupdater data clear
 ```
 
-#### Reload configuration
-
-```
-# Reload server config
-/sakuraupdater reload server
-
-# Reload data config
-/sakuraupdater reload data
-```
-
 ### 2. Client player operations
 
 #### Automatic update check
 
 When a player joins the game, the client will automatically check whether the server has a newer version and will open the update UI if an update is available.
-
-#### Reload client config
-
-`/sakuraupdater reload client`
