@@ -36,7 +36,6 @@ SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器�
 ### 服务器配置 (sakuraupdater-server.toml)
 
 ```toml
-[general]
 # 文件服务器端口
 port = 25564
 
@@ -53,7 +52,6 @@ SYNC_DIR = [
 ```
 ### 客户端配置 (sakuraupdater-client.toml)
 ```toml
-[general]
 # 服务器主机地址
 host = "localhost"
 
@@ -146,7 +144,6 @@ SakuraUpdater is a NeoForge Minecraft mod that enables automatic synchronization
 ### Server configuration (`sakuraupdater-server.toml`)
 
 ```toml
-[general]
 # File server port
 port = 25564
 
@@ -165,7 +162,6 @@ SYNC_DIR = [
 ### Client configuration (`sakuraupdater-client.toml`)
 
 ```toml
-[general]
 # Server host address
 host = "localhost"
 
