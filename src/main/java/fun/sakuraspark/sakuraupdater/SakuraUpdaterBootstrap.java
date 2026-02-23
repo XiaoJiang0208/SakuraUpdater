@@ -1,5 +1,7 @@
 package fun.sakuraspark.sakuraupdater;
 
+import static com.mojang.brigadier.arguments.StringArgumentType.string;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,7 +16,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.security.CodeSource;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -24,8 +25,6 @@ public final class SakuraUpdaterBootstrap {
     private static final String LOG_FILE_PREFIX = "logs/sakuraupdater-";
     private static final String LOG_FILE_SUFFIX = ".log";
     private static final DateTimeFormatter LOG_FILE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
-    
-    private static PromptManager promptManager;
 
     private static final String EMBEDDED_JAR_PREFIX = "META-INF/jarjar/";
     private static final String MAIN_CLASS = "fun.sakuraspark.sakuraupdater.SakuraUpdaterServerOnly";
@@ -53,15 +52,6 @@ public final class SakuraUpdaterBootstrap {
     private SakuraUpdaterBootstrap() {
     }
 
-    private static final class PromptManager {
-        public final AtomicBoolean awaitingInput = new AtomicBoolean(false);
-        public final String promptText;
-
-        private PromptManager(String promptText) {
-            this.promptText = promptText;
-        }
-    }
-
     private static String buildLogFileName() {
         String timestamp = LocalDateTime.now().format(LOG_FILE_TIME_FORMAT);
         return LOG_FILE_PREFIX + timestamp + LOG_FILE_SUFFIX;
@@ -78,48 +68,29 @@ public final class SakuraUpdaterBootstrap {
         PrintStream consoleErr = System.err;
         PrintStream fileOut = new PrintStream(Files.newOutputStream(path), true, "UTF-8");
 
-        System.setOut(new PrintStream(new PromptingTeeOutputStream(consoleOut, fileOut, promptManager), true, "UTF-8"));
-        System.setErr(new PrintStream(new PromptingTeeOutputStream(consoleErr, fileOut, promptManager), true, "UTF-8"));
+        System.setOut(new PrintStream(new TeeOutputStream(consoleOut, fileOut), true, "UTF-8"));
+        System.setErr(new PrintStream(new TeeOutputStream(consoleErr, fileOut), true, "UTF-8"));
     }
 
-    private static final class PromptingTeeOutputStream extends OutputStream {
+    private static final class TeeOutputStream extends OutputStream {
         private final PrintStream console;
         private final PrintStream file;
-        private final PromptManager promptManager;
 
-        private PromptingTeeOutputStream(PrintStream console, PrintStream file, PromptManager promptManager) {
+        private TeeOutputStream(PrintStream console, PrintStream file) {
             this.console = console;
             this.file = file;
-            this.promptManager = promptManager;
         }
 
         @Override
         public void write(int b) throws IOException {
             console.write(b);
             file.write(b);
-            if (b == '\n') {
-                // 只在控制台重刷提示符
-                if (promptManager.awaitingInput.get()) {
-                    console.print(promptManager.promptText);
-                    console.flush();
-                }
-            }
         }
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
             console.write(b, off, len);
             file.write(b, off, len);
-            for (int i = off; i < off + len; i++) {
-                if (b[i] == '\n') {
-                    // 只在控制台重刷提示符
-                    if (promptManager.awaitingInput.get()) {
-                        console.print(promptManager.promptText);
-                        console.flush();
-                    }
-                    break;
-                }
-            }
         }
 
         @Override
@@ -132,10 +103,7 @@ public final class SakuraUpdaterBootstrap {
     public static void main(String[] args) throws Exception {
         // 设置主线程名称
         Thread.currentThread().setName("Server thread");
-        
-        // 初始化提示符管理器
-        promptManager = new PromptManager("> ");
-        
+
         // 同时输出到文件（stdout + file）
         try {
             setupTeeOutput(buildLogFileName());
@@ -146,7 +114,7 @@ public final class SakuraUpdaterBootstrap {
         URL selfJar = getSelfJarUrl();
         URL[] embeddedJars = extractEmbeddedJars();
         if (selfJar == null || embeddedJars.length == 0) {
-            invokeMain(MAIN_CLASS, SakuraUpdaterBootstrap.class.getClassLoader(), args);
+            invokeMain(MAIN_CLASS, SakuraUpdaterBootstrap.class.getClassLoader(), new String[]{"ServerOnly"});
             return;
         }
 
@@ -156,7 +124,7 @@ public final class SakuraUpdaterBootstrap {
 
         try (URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getPlatformClassLoader())) {
             Thread.currentThread().setContextClassLoader(loader);
-            invokeMain(MAIN_CLASS, loader, args);
+            invokeMain(MAIN_CLASS, loader, new String[]{"ServerOnly"});
         }
     }
 
