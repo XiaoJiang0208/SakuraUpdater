@@ -2,6 +2,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'net.neoforged.moddev' version '2.0.105'
 }
 
@@ -124,6 +125,11 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    // 独立模式依赖配置
+    standalone {
+        canBeResolved = true
+        canBeConsumed = false
+    }
 }
 // obfuscation {
 //     createRemappingConfiguration(configurations.localRuntime)
@@ -169,43 +175,51 @@ dependencies {
         }
     }
 
-    // GSON - 用于独立模式（脱离 Forge）的 JSON 配置解析
-    compileOnly 'com.google.code.gson:gson:2.10'
-    jarJar(group: 'com.google.code.gson', name: 'gson') {
-        version {
-            prefer '2.10'
-        }
-    }
+    // // GSON - 用于独立模式（脱离 Forge）的 JSON 配置解析
+    // compileOnly 'com.google.code.gson:gson:2.10'
+    // jarJar(group: 'com.google.code.gson', name: 'gson') {
+    //     version {
+    //         prefer '2.10'
+    //     }
+    // }
 
-    // // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
-    compileOnly 'com.electronwill.night-config:toml:3.8.1'
-    compileOnly 'com.electronwill.night-config:core:3.8.1'
-    jarJar(group: 'com.electronwill.night-config', name: 'toml') {
-        version {
-            prefer '3.8.1'
-        }
-    }
-    jarJar(group: 'com.electronwill.night-config', name: 'core') {
-        version {
-            prefer '3.8.1'
-        }
-    }
+    // // // NightConfig TOML - 用于独立模式（脱离 Forge）的 TOML 配置解析
+    // compileOnly 'com.electronwill.night-config:toml:3.8.1'
+    // compileOnly 'com.electronwill.night-config:core:3.8.1'
+    // jarJar(group: 'com.electronwill.night-config', name: 'toml') {
+    //     version {
+    //         prefer '3.8.1'
+    //     }
+    // }
+    // jarJar(group: 'com.electronwill.night-config', name: 'core') {
+    //     version {
+    //         prefer '3.8.1'
+    //     }
+    // }
 
-    // Standalone logging - only needed for standalone JAR, not dev environment
-    // Use compileOnly to have the classes available at compile time
-    compileOnly 'org.slf4j:slf4j-api:2.0.9'
-    compileOnly 'org.slf4j:slf4j-simple:2.0.9'
-    // JarJar will include them in the final JAR for standalone mode
-    jarJar(group: 'org.slf4j', name: 'slf4j-api') {
-        version {
-            prefer '2.0.9'
-        }
-    }
-    jarJar(group: 'org.slf4j', name: 'slf4j-simple') {
-        version {
-            prefer '2.0.9'
-        }
-    }
+    // // Standalone logging - only needed for standalone JAR, not dev environment
+    // // Use compileOnly to have the classes available at compile time
+    // compileOnly 'org.slf4j:slf4j-api:2.0.9'
+    // compileOnly 'org.slf4j:slf4j-simple:2.0.9'
+    // // JarJar will include them in the final JAR for standalone mode
+    // jarJar(group: 'org.slf4j', name: 'slf4j-api') {
+    //     version {
+    //         prefer '2.0.9'
+    //     }
+    // }
+    // jarJar(group: 'org.slf4j', name: 'slf4j-simple') {
+    //     version {
+    //         prefer '2.0.9'
+    //     }
+    // }
+
+    // 独立模式依赖 - 直接包含到JAR中
+    standalone 'org.xerial:sqlite-jdbc:3.46.0.0'
+    standalone 'com.google.code.gson:gson:2.10'
+    standalone 'com.electronwill.night-config:toml:3.8.1'
+    standalone 'com.electronwill.night-config:core:3.8.1'
+    standalone 'org.slf4j:slf4j-api:2.0.9'
+    standalone 'org.slf4j:slf4j-simple:2.0.9'
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
@@ -220,10 +234,41 @@ dependencies {
 }
 */
 
+// 模组JAR - 用于Forge环境
 jar {
+    manifest.attributes([
+            'Main-Class': 'fun.sakuraspark.sakuraupdater.Main'
+    ])
+    archiveClassifier.set('')
+}
+
+// 独立模式JAR - 包含所有必要的依赖
+shadowJar {
+    archiveClassifier.set('standalone')
+    configurations = [project.configurations.standalone]
+    
     manifest.attributes([
             'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterBootstrap'
     ])
+    
+    // 排除不必要的元数据文件
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/LICENSE*'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.RSA'
+    
+    // 处理SPI服务文件（JDBC驱动程序等）
+    mergeServiceFiles()
+    
+    // // 重定位包名防止冲突
+    // relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
+    // relocate 'com.google.gson', 'fun.sakuraspark.sakuraupdater.shadow.com.google.gson'
+    // relocate 'com.electronwill.nightconfig', 'fun.sakuraspark.sakuraupdater.shadow.com.electronwill.nightconfig'
+}
+
+// 添加shadowJar作为build任务的依赖
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -278,16 +323,3 @@ idea {
         downloadJavadoc = true
     }
 }
-// tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-//     archiveClassifier.set('') // 生成不带 -all 后缀的 jar，直接替换原 jar
-//     configurations = [project.configurations.shade]
-//     // 排除不必要的文件
-//     exclude 'META-INF/maven/**'
-//     exclude 'META-INF/LICENSE*'
-//     
-//     // 处理 SPI 服务文件 (如 JDBC 驱动)
-//     mergeServiceFiles()
-//     // 重定位包名，防止与其他 Mod 的 SQLite 驱动冲突
-//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
-//     relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
-// }

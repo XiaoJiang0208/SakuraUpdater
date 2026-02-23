@@ -152,9 +152,6 @@ public class SakuraUpdaterServerOnly {
     private static final Logger LOGGER = LoggerFactory.getLogger(SakuraUpdaterServerOnly.class);
 
     public static int main(String[] args) {
-        PromptManager promptManager = new PromptManager("> ");
-        System.setOut(wrapPrintStream(System.out, promptManager));
-        System.setErr(wrapPrintStream(System.err, promptManager));
         System.out.println("""
                   ____        _                    _   _           _       _            
                  / ___|  __ _| | ___   _ _ __ __ _| | | |_ __   __| | __ _| |_ ___ _ __ 
