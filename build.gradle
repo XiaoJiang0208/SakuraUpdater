@@ -213,7 +213,7 @@ dependencies {
     //     }
     // }
 
-    modCompileOnly 'maven.modrinth:aether:1.20.1-1.5.2-neoforge'
+    //modLocalRuntime 'maven.modrinth:aether:1.20.1-1.5.2-neoforge'
 
     // 独立模式依赖 - 直接包含到JAR中
     standalone 'org.xerial:sqlite-jdbc:3.46.0.0'
