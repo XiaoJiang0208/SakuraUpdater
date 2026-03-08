@@ -224,12 +224,6 @@ dependencies {
     standalone 'org.slf4j:slf4j-simple:2.0.9'
 }
 
-// Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
-}
-
 dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
