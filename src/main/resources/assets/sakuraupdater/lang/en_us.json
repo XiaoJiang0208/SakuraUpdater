@@ -14,5 +14,6 @@
   "gui.sakuraupdater.UpdateScreen.cancel": "Cancel",
   "gui.sakuraupdater.UpdateScreen.retry": "Retry",
   "gui.sakuraupdater.UpdateScreen.restartnow": "Restart now to apply updates",
-  "gui.sakuraupdater.UpdateScreen.restartlater": "Restart later"
+  "gui.sakuraupdater.UpdateScreen.restartlater": "Restart later",
+  "gui.sakuraupdater.TitleScreen.checkupdate": "Update"
 }

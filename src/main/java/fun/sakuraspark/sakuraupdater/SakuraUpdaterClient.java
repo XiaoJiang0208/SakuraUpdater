@@ -82,6 +82,8 @@ public class SakuraUpdaterClient {
     }
 
     public boolean integrityCheck() {
+        //TODO: this shit needs to be rebuild！
+        //TODO: 先删除在下载有点危险
         update_progress = new Pair<>(-1, -1); // 重置进度
         integrityCheckResult = new Pair<List<File>, List<FileData>>(new ArrayList<>(), new ArrayList<>());
         if (getLastUpdateData() == null) {

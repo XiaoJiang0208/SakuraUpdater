@@ -213,6 +213,8 @@ dependencies {
     //     }
     // }
 
+    modCompileOnly 'maven.modrinth:aether:1.20.1-1.5.2-neoforge'
+
     // 独立模式依赖 - 直接包含到JAR中
     standalone 'org.xerial:sqlite-jdbc:3.46.0.0'
     standalone 'com.google.code.gson:gson:2.10'
@@ -223,7 +225,6 @@ dependencies {
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
-/*
 mixin {
     add sourceSets.main, "${mod_id}.refmap.json"
     config "${mod_id}.mixins.json"
@@ -232,7 +233,6 @@ mixin {
 dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
-*/
 
 // 模组JAR - 用于Forge环境
 jar {
@@ -251,8 +251,11 @@ shadowJar {
             'Main-Class': 'fun.sakuraspark.sakuraupdater.SakuraUpdaterBootstrap'
     ])
     
-    // 排除不必要的元数据文件
+    // 排除不必要的元数据文件 
     exclude 'META-INF/maven/**'
+    // standalone 仅用于 java -jar，不应被 Forge 当成 MOD 解析
+    exclude 'META-INF/mods.toml'
+    exclude 'META-INF/neoforge.mods.toml'
     exclude 'META-INF/LICENSE*'
     exclude 'META-INF/*.SF'
     exclude 'META-INF/*.RSA'
@@ -260,10 +263,10 @@ shadowJar {
     // 处理SPI服务文件（JDBC驱动程序等）
     mergeServiceFiles()
     
-    // // 重定位包名防止冲突
-    // relocate 'org.sqlite', 'fun.sakuraspark.sakuraupdater.shadow.org.sqlite'
-    // relocate 'com.google.gson', 'fun.sakuraspark.sakuraupdater.shadow.com.google.gson'
-    // relocate 'com.electronwill.nightconfig', 'fun.sakuraspark.sakuraupdater.shadow.com.electronwill.nightconfig'
+    // 重定位包名防止与Forge/其他模组在模块层冲突
+    relocate 'com.google.gson', 'fun.sakuraspark.sakuraupdater.shadow.com.google.gson'
+    relocate 'com.electronwill.nightconfig', 'fun.sakuraspark.sakuraupdater.shadow.com.electronwill.nightconfig'
+    relocate 'org.slf4j', 'fun.sakuraspark.sakuraupdater.shadow.org.slf4j'
 }
 
 // 添加shadowJar作为build任务的依赖
