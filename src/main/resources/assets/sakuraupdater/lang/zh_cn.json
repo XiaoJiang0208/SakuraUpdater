@@ -14,5 +14,6 @@
   "gui.sakuraupdater.UpdateScreen.cancel": "取消",
   "gui.sakuraupdater.UpdateScreen.retry": "重试",
   "gui.sakuraupdater.UpdateScreen.restartnow": "立即重启以应用更新",
-  "gui.sakuraupdater.UpdateScreen.restartlater": "稍后重启"
+  "gui.sakuraupdater.UpdateScreen.restartlater": "稍后重启",
+  "gui.sakuraupdater.TitleScreen.checkupdate": "检查更新"
 }
