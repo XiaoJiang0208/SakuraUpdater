@@ -2,7 +2,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.6'
     id 'net.neoforged.moddev' version '2.0.105'
 }
 
@@ -222,10 +222,6 @@ dependencies {
     standalone 'com.electronwill.night-config:core:3.8.1'
     standalone 'org.slf4j:slf4j-api:2.0.9'
     standalone 'org.slf4j:slf4j-simple:2.0.9'
-}
-
-dependencies {
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 // 模组JAR - 用于Forge环境
