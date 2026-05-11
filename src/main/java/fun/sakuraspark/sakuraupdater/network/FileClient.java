@@ -219,12 +219,12 @@ public class FileClient {
      * 读取输入流
      */
     private String readInputStream(InputStream is) throws IOException {
-        StringBuilder sb = new StringBuilder();
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
         int bytesRead;
         while ((bytesRead = is.read(buffer)) != -1) {
-            sb.append(new String(buffer, 0, bytesRead, StandardCharsets.UTF_8));
+            bos.write(buffer, 0, bytesRead);
         }
-        return sb.toString();
+        return bos.toString(StandardCharsets.UTF_8.name());
     }
 }
