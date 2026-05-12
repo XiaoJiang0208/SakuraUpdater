@@ -324,13 +324,13 @@ public class FileServer {
      */
     private String readRequestBody(HttpExchange exchange) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
             byte[] buffer = new byte[8192];
-            StringBuilder sb = new StringBuilder();
             int bytesRead;
             while ((bytesRead = is.read(buffer)) != -1) {
-                sb.append(new String(buffer, 0, bytesRead, StandardCharsets.UTF_8));
+                bos.write(buffer, 0, bytesRead);
             }
-            return sb.toString();
+            return bos.toString(StandardCharsets.UTF_8.name());
         }
     }
 }

@@ -153,6 +153,7 @@ public class ServerCommandsHelper {
             data.targetPath = targetPath;
             data.files = new ArrayList<>();
             for (String source : sourcePath) {
+                // 递归获取 source 目录下的所有文件，并生成 FileData 列表
                 FileUtils.getAllFiles(new File(source)).forEach(file -> {
                     FileData fileData = new FileData();
                     fileData.sourcePath = file.toString().replace(File.separator, "/");
