@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
-import fun.sakuraspark.sakuraupdater.gui.components.MarkdownBox;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,36 +15,27 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 
-public class UpdateCheckScreen extends Screen {
-
-    // public static final CubeMap CUBE_MAP = new CubeMap(new
-    // ResourceLocation("textures/gui/title/background/panorama"));
-
-    // private final PanoramaRenderer panorama = new PanoramaRenderer(CUBE_MAP);
-    // private boolean fading = true;
-    // private long fadeInStart;
-
-    private int updateStatus = 0; // -1: error, 0: checking, 1: need update, 2: no update 3: only server update
+public class FixScreen extends Screen {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public UpdateCheckScreen() {
-        super(Component.translatable("gui.sakuraupdater.UpdateCheckScreen"));
-        LOGGER.info("start version checking...");
+    int fixStatus = 0; // -1: error, 0: checking, 1: issues found, 2: no issues
+
+    public FixScreen() {
+        super(Component.translatable("gui.sakuraupdater.FixScreen"));
+        LOGGER.info("start Verify Mods Integrity...");
         CompletableFuture.supplyAsync(() -> {
             // 这里运行在后台线程中
             try {
+                // 强制进行完整性检查
                 int result = SakuraUpdaterClient.getInstance().updateCheck();
                 if (result == -1) {
                     return -1;
-                } else if (result == 0) {
-                    return 2; // No update
-                } else {
-                    if (SakuraUpdaterClient.getInstance().integrityCheck()) {
-                        return 1; // Need update
-                    }
-                    return 3; // Only server update
                 }
+                if (SakuraUpdaterClient.getInstance().integrityCheck()) {
+                    return 1; // Need update
+                }
+                return 2; // No issues found
             } catch (Exception e) {
                 LOGGER.error("Error during update check", e);
                 return -1;
@@ -54,7 +44,7 @@ public class UpdateCheckScreen extends Screen {
                 .thenAcceptAsync(result -> {
                     // 回到主线程更新UI
                     Minecraft.getInstance().execute(() -> {
-                        updateStatus = result; // 更新状态
+                        fixStatus = result; // 更新状态
                         // 当状态变为1时，重建界面添加按钮
                         this.rebuildWidgets();
                     });
@@ -62,45 +52,36 @@ public class UpdateCheckScreen extends Screen {
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return false; // 禁止ESC关闭
-    }
-
-    @Override
     public void init() {
         super.init();
-        if (updateStatus == -1) {
+        if (fixStatus == -1) {
             this.addRenderableWidget(
-                    Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.retry"), button -> {
+                    Button.builder(Component.translatable("gui.sakuraupdater.FixScreen.retry"), button -> {
                         // 点击按钮后重新检查更新
-                        Minecraft.getInstance().setScreen(new UpdateCheckScreen());
+                        Minecraft.getInstance().setScreen(new FixScreen());
                     }).bounds(this.width / 2 - 100, this.height - 50, 200, 20).build());
             this.addRenderableWidget(
-                    Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
+                    Button.builder(Component.translatable("gui.sakuraupdater.FixScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
-        } else if (updateStatus == 1) {
+        } else if (fixStatus == 1) {
             this.addRenderableWidget(
-                    Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.update"), button -> {
+                    Button.builder(Component.translatable("gui.sakuraupdater.FixScreen.fix"), button -> {
                         // 点击按钮后打开更新界面
-                        Minecraft.getInstance().setScreen(new UpdateScreen());
+                        Minecraft.getInstance().setScreen(new UpdateScreen("FixScreen"));
                     }).bounds(this.width / 2 - 100, this.height - 50, 200, 20).build());
             this.addRenderableWidget(
-                    Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.cancel"), button -> {
+                    Button.builder(Component.translatable("gui.sakuraupdater.FixScreen.cancel"), button -> {
                         // 点击按钮后关闭当前界面
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
         } else {
             this.addRenderableWidget(
-                    Button.builder(Component.translatable("gui.sakuraupdater.UpdateCheckScreen.ok"), button -> {
+                    Button.builder(Component.translatable("gui.sakuraupdater.FixScreen.ok"), button -> {
                         // 点击按钮后关闭当前界面
                         Minecraft.getInstance().setScreen(new TitleScreen(true));
                     }).bounds(this.width / 2 - 100, this.height - 20, 200, 20).build());
-        }
-        if (updateStatus == 1 || updateStatus == 3) {
-            this.addRenderableWidget(new MarkdownBox(this.width / 2 - 125, this.height / 2 - 70, 250, 140,
-                    SakuraUpdaterClient.getInstance().getLastUpdateData().description));
         }
     }
 
@@ -115,19 +96,19 @@ public class UpdateCheckScreen extends Screen {
         // guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (updateStatus == 0) {
+        if (fixStatus == 0) {
             guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
-        } else if (updateStatus == 1 || updateStatus == 3) {
+        } else if (fixStatus == 1) {
             guiGraphics.drawCenteredString(this.font,
-                    Component.literal(SakuraUpdaterClient.getInstance().getLastUpdateData().version), this.width / 2,
-                    30, 16711680); // Red color for need update
-        } else if (updateStatus == 2) {
+                    Component.translatable("gui.sakuraupdater.FixScreen.IssuesFound"), this.width / 2,
+                    this.height / 2, 16711680); // Red color for issues found
+        } else if (fixStatus == 2) {
             guiGraphics.drawCenteredString(this.font,
-                    Component.translatable("gui.sakuraupdater.UpdateCheckScreen.NoUpdate"), this.width / 2,
-                    this.height / 2, 65280); // Green color for no update
-        } else if (updateStatus == -1) {
+                    Component.translatable("gui.sakuraupdater.FixScreen.NoIssues"), this.width / 2,
+                    this.height / 2, 65280); // Green color for no issues found
+        } else if (fixStatus == -1) {
             guiGraphics.drawCenteredString(this.font,
-                    Component.translatable("gui.sakuraupdater.UpdateCheckScreen.Error"), this.width / 2,
+                    Component.translatable("gui.sakuraupdater.FixScreen.error"), this.width / 2,
                     this.height / 2, 16711680); // Red color for error
 
         }

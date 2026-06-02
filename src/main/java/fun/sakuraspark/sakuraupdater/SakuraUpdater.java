@@ -1,6 +1,7 @@
 package fun.sakuraspark.sakuraupdater;
 
 import com.mojang.logging.LogUtils;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.IEventBus;

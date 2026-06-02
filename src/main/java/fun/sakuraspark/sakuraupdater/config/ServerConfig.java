@@ -13,7 +13,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.config.ModConfigEvent;
 
 // An example config class. This is not required, but it's a good idea to have one to keep your config organized.
@@ -39,14 +38,16 @@ public class ServerConfig {
                     "A list of sync directories, each entry should be in the format 'targetpath:mode[:sourcepath:sourcepath2:...]', e.g. 'mod:mirror' or 'config:push:clientconfig'.\n"
                             + "The 'targetpath' is the client target path of sync, and 'sourcepath' is the server source path of sync.\n"
                             + "The 'sourcepath' is optional, if not provided, it will be the same as 'targetpath'.\n"
-                            + "'mode' can be 'mirror' or 'push'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.\n"
+                            + "'mode' can be 'mirror', 'push' or 'ignore'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.\n"
+                            + "'ignore' mode uses regex to exclude files. Since the path is included, '.*filename$' is recommended (e.g., 'mods:ignore:.*abc\\.jar$').\n"
                             + "This is used to determine which directories to sync with the client.\n"
                             + "SYNC_DIR = [\n"
                             + "    'example:mirror', // it same as 'example:mirror:example'\n"
                             + "    'mods:mirror:mods:clientmods',\n"
-                            + "    'config:push:clientconfig'\n"
+                            + "    'config:push:clientconfig',\n"
+                            + "    'mods:ignore:.*abc\\.jar$'\n"
                             + "]")
-            .defineListAllowEmpty("SYNC_DIR", List.of(), ServerConfig::validateKeyMap);
+            .defineListAllowEmpty("SYNC_DIR", List.of(), () -> "", ServerConfig::validateKeyMap);
     // static final ModConfigSpec for the server config
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -62,8 +63,8 @@ public class ServerConfig {
                         (String) obj);
                 return false;
             }
-            if (!"mirror".equals(path.split(":")[1]) && !"push".equals(path.split(":")[1])) {
-                LOGGER.warn("{} format error, mode should be 'mirror' or 'push'. Please check the config file",
+            if (!"mirror".equals(path.split(":")[1]) && !"push".equals(path.split(":")[1]) && !"ignore".equals(path.split(":")[1])) {
+                LOGGER.warn("{} format error, mode should be 'mirror', 'push' or 'ignore'. Please check the config file",
                         (String) obj);
                 return false;
             }
@@ -75,6 +76,7 @@ public class ServerConfig {
     }
 
     public static List<String> getSyncDirs() {
+        SYNC_DIR.clearCache(); // 手动清除缓存，确保强制获取最新配置
         return SYNC_DIR.get().stream()
                 .collect(Collectors.toList());
     }

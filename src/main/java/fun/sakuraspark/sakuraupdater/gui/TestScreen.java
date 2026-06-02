@@ -1,15 +1,10 @@
 package fun.sakuraspark.sakuraupdater.gui;
 
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
-import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.CubeMap;
-import net.minecraft.client.renderer.PanoramaRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 
 public class TestScreen extends Screen {
 

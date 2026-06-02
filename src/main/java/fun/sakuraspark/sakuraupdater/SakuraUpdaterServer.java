@@ -25,8 +25,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.fml.javafmlmod.FMLModContainer;
 
 //@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = SakuraUpdater.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class SakuraUpdaterServer {
@@ -185,7 +183,7 @@ public class SakuraUpdaterServer {
                         .suggests(VERSION_SUGGESTIONS)
                         .then(argument("description", greedyString())
                                 .executes(context -> {
-                                    LOGGER.debug("why!");
+                                    //LOGGER.debug("why!");
                                     String version = getString(context, "version");
                                     String description = getString(context, "description");
                                     List<PathData> pathData;

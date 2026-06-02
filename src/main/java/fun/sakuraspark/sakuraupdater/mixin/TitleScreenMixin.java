@@ -2,10 +2,13 @@ package fun.sakuraspark.sakuraupdater.mixin;
 
 import com.mojang.logging.LogUtils;
 
+import fun.sakuraspark.sakuraupdater.gui.FixScreen;
 import fun.sakuraspark.sakuraupdater.gui.UpdateCheckScreen;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ImageWidget;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,19 +18,45 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(TitleScreen.class)
 public class TitleScreenMixin extends net.minecraft.client.gui.screens.Screen {
-    protected  TitleScreenMixin(Component title) {
+    protected TitleScreenMixin(Component title) {
         super(title);
     }
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    private Button updateCheckButton;
+    private Button fixButton;
+    private ImageWidget logoWidget;
+
     // 在菜单添加一个按钮，点击后打开更新界面
     @Inject(method = "init", at = @At("TAIL"))
-    private void sakuraUpdater$addUpdateButton(CallbackInfo callbackInfo) {
-        // 这里直接添加一个按钮，点击后打开更新界面
-        // 你可以根据需要调整按钮的位置和样式
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.TitleScreen.checkupdate"), button -> {
+    private void sakuraUpdater$addUpdateButton(CallbackInfo ci) {
+        ResourceLocation logoTexture = ResourceLocation.fromNamespaceAndPath("sakuraupdater", "textures/sakuraupdater.png");
+        this.logoWidget = ImageWidget.texture(20, 20, logoTexture, 20, 20);
+        this.logoWidget.setY(5);
+        this.logoWidget.setX(0);
+        this.addRenderableWidget(this.logoWidget);
+        this.updateCheckButton = Button.builder(Component.translatable("gui.sakuraupdater.TitleScreen.checkupdate"), button -> {
             this.minecraft.setScreen(new UpdateCheckScreen());
-        }).bounds(5, 5, 60, 20).build());
+        }).bounds(-60, 5, 60, 20).build();
+        this.addRenderableWidget(this.updateCheckButton);
+        this.fixButton = Button.builder(Component.translatable("gui.sakuraupdater.TitleScreen.fix"), button -> {
+            this.minecraft.setScreen(new FixScreen());
+        }).bounds(-60, 25, 60, 20).build();
+        this.addRenderableWidget(this.fixButton);
+    }
+
+    // 添加按钮隐藏逻辑
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void sakuraUpdater$addUpdateButtonMoveLogic(CallbackInfo ci) {
+        if (this.logoWidget.isHovered() || this.updateCheckButton.isHovered() || this.fixButton.isHovered()) {
+            this.updateCheckButton.setX(0);
+            this.fixButton.setX(0);
+            this.logoWidget.setX(60);
+        } else {
+            this.updateCheckButton.setX(-60);
+            this.fixButton.setX(-60);
+            this.logoWidget.setX(0);
+        }
     }
 }

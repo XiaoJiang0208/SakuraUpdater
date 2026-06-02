@@ -15,5 +15,14 @@
   "gui.sakuraupdater.UpdateScreen.retry": "Retry",
   "gui.sakuraupdater.UpdateScreen.restartnow": "Restart now to apply updates",
   "gui.sakuraupdater.UpdateScreen.restartlater": "Restart later",
-  "gui.sakuraupdater.TitleScreen.checkupdate": "Update"
+  "gui.sakuraupdater.FixScreen": "Verifying mods Integrity...",
+  "gui.sakuraupdater.FixScreen.retry": "Retry",
+  "gui.sakuraupdater.FixScreen.cancel": "Cancel",
+  "gui.sakuraupdater.FixScreen.fix": "Try to fix",
+  "gui.sakuraupdater.FixScreen.ok": "OK",
+  "gui.sakuraupdater.FixScreen.error": "Failed to verify mods integrity from the server",
+  "gui.sakuraupdater.FixScreen.IssuesFound": "Issues found",
+  "gui.sakuraupdater.FixScreen.NoIssues": "No issues found",
+  "gui.sakuraupdater.TitleScreen.checkupdate": "Update",
+  "gui.sakuraupdater.TitleScreen.fix": "Fix Mods"
 }

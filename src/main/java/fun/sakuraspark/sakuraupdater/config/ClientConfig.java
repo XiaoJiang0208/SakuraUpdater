@@ -1,18 +1,11 @@
 package fun.sakuraspark.sakuraupdater.config;
 
-import java.util.Set;
-
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-
 import fun.sakuraspark.sakuraupdater.SakuraUpdater;
 import fun.sakuraspark.sakuraupdater.SakuraUpdaterClient;
-import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.config.ModConfigEvent;
 
 // An example config class. This is not required, but it's a good idea to have one to keep your config organized.

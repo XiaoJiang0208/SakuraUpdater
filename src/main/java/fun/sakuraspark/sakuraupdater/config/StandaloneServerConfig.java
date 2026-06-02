@@ -16,7 +16,9 @@ import com.electronwill.nightconfig.core.file.CommentedFileConfig;
  * 独立模式的服务器配置 - 完全脱离 Forge/Minecraft 依赖
  * 使用 TOML 格式（与 Forge 模式的 sakuraupdater-common.toml 格式兼容）
  * 
- * <p>配置文件路径: sakuraupdater-common.toml</p>
+ * <p>
+ * 配置文件路径: sakuraupdater-common.toml
+ * </p>
  */
 public class StandaloneServerConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneServerConfig.class);
@@ -39,19 +41,10 @@ public class StandaloneServerConfig {
      * 初始化配置 - 从 TOML 文件加载，若文件不存在则自动创建默认配置
      */
     public static void initialize() {
-        if (initialized) return;
+        if (initialized)
+            return;
 
-        Path configPath = Paths.get(CONFIG_FILE);
-        try {
-            if (!Files.exists(configPath)) {
-                LOGGER.info("Config file not found, creating default: {}", CONFIG_FILE);
-                createDefaultConfig(configPath);
-            }
-            loadConfig(configPath);
-            LOGGER.info("Standalone config loaded successfully. port={}, syncDirs={}", port, syncDirs);
-        } catch (Exception e) {
-            LOGGER.error("Failed to load config file '{}', using defaults", CONFIG_FILE, e);
-        }
+        loadConfig();
 
         initialized = true;
     }
@@ -59,35 +52,46 @@ public class StandaloneServerConfig {
     /**
      * 从 TOML 文件加载配置
      */
-    private static void loadConfig(Path configPath) {
-        try (CommentedFileConfig config = CommentedFileConfig.builder(configPath)
-                .sync()
-                .autosave()
-                .build()) {
-            config.load();
-
-            // port
-            Object portObj = config.get("port");
-            if (portObj instanceof Number) {
-                int p = ((Number) portObj).intValue();
-                if (p >= 1 && p <= 65535) {
-                    port = p;
-                } else {
-                    LOGGER.warn("Config 'port' out of range (1-65535): {}, using default {}", p, port);
-                }
+    private static void loadConfig() {
+        Path configPath = Paths.get(CONFIG_FILE);
+        try {
+            if (!Files.exists(configPath)) {
+                LOGGER.info("Config file not found, creating default: {}", CONFIG_FILE);
+                createDefaultConfig(configPath);
             }
 
-            // SYNC_DIR
-            List<String> syncList = config.get("SYNC_DIR");
-            if (syncList != null) {
-                List<String> parsed = new ArrayList<>();
-                for (String entry : syncList) {
-                    if (validateSyncEntry(entry)) {
-                        parsed.add(entry);
+            try (CommentedFileConfig config = CommentedFileConfig.builder(configPath)
+                    .sync()
+                    .autosave()
+                    .build()) {
+                config.load();
+
+                // port
+                Object portObj = config.get("port");
+                if (portObj instanceof Number) {
+                    int p = ((Number) portObj).intValue();
+                    if (p >= 1 && p <= 65535) {
+                        port = p;
+                    } else {
+                        LOGGER.warn("Config 'port' out of range (1-65535): {}, using default {}", p, port);
                     }
                 }
-                syncDirs = parsed;
+
+                // SYNC_DIR
+                List<String> syncList = config.get("SYNC_DIR");
+                if (syncList != null) {
+                    List<String> parsed = new ArrayList<>();
+                    for (String entry : syncList) {
+                        if (validateSyncEntry(entry)) {
+                            parsed.add(entry);
+                        }
+                    }
+                    syncDirs = parsed;
+                }
             }
+            LOGGER.info("Standalone config loaded successfully. port={}, syncDirs={}", port, syncDirs);
+        } catch (Exception e) {
+            LOGGER.error("Failed to load config file '{}', using defaults", CONFIG_FILE, e);
         }
     }
 
@@ -103,12 +107,14 @@ public class StandaloneServerConfig {
                 #A list of sync directories, each entry should be in the format 'targetpath:mode[:sourcepath:sourcepath2:...]', e.g. 'mod:mirror' or 'config:push:clientconfig'.
                 #The 'targetpath' is the client target path of sync, and 'sourcepath' is the server source path of sync.
                 #The 'sourcepath' is optional, if not provided, it will be the same as 'targetpath'.
-                #'mode' can be 'mirror' or 'push'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.
+                #'mode' can be 'mirror', 'push' or 'ignore'. 'mirror' will delete files in the target directory that are not in the source directory, while 'push' will not.
+                #'ignore' mode uses regex to exclude files. Since the path is included, '.*filename$' is recommended (e.g., 'mods:ignore:.*abc\\.jar$').
                 #This is used to determine which directories to sync with the client.
                 #SYNC_DIR = [
                 #    'example:mirror', // it same as 'example:mirror:example'
                 #    'mods:mirror:mods:clientmods',
-                #    'config:push:clientconfig'
+                #    'config:push:clientconfig',
+                #    'mods:ignore:.*abc\\.jar$'
                 #]
                 SYNC_DIR = []
                 """;
@@ -133,8 +139,8 @@ public class StandaloneServerConfig {
             return false;
         }
         String mode = parts[1];
-        if (!"mirror".equals(mode) && !"push".equals(mode)) {
-            LOGGER.warn("sync_dirs entry '{}' 格式错误, mode 应为 'mirror' 或 'push'", entry);
+        if (!"mirror".equals(mode) && !"push".equals(mode) && !"ignore".equals(mode)) {
+            LOGGER.warn("sync_dirs entry '{}' 格式错误, mode 应为 'mirror', 'push' 或 'ignore'", entry);
             return false;
         }
         return true;
@@ -147,16 +153,8 @@ public class StandaloneServerConfig {
     }
 
     public static List<String> getSyncDirs() {
+        loadConfig(); // 每次获取时重新加载配置，确保获取最新值
         return List.copyOf(syncDirs);
     }
 
-    /**
-     * 重新加载配置 (热重载)
-     */
-    public static void reload() {
-        initialized = false;
-        syncDirs = new ArrayList<>();
-        port = 25564;
-        initialize();
-    }
 }

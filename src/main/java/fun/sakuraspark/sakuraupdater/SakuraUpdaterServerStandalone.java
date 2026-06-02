@@ -22,7 +22,7 @@ import fun.sakuraspark.sakuraupdater.utils.ServerCommandsHelper;
  * 独立模式入口 - 脱离 Forge/Minecraft 运行
  * 使用 YAML 配置替代 ForgeConfigSpec
  */
-public class SakuraUpdaterServerOnly {
+public class SakuraUpdaterServerStandalone {
 
     private static final class PromptManager {
         public final AtomicBoolean awaitingInput = new AtomicBoolean(false);
@@ -149,7 +149,7 @@ public class SakuraUpdaterServerOnly {
 
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SakuraUpdaterServerOnly.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SakuraUpdaterServerStandalone.class);
 
     public static int main(String[] args) {
         System.out.println("""

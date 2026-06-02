@@ -11,11 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.renderer.CubeMap;
-import net.minecraft.client.renderer.PanoramaRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 
 public class UpdateScreen extends Screen {
 
@@ -31,8 +27,14 @@ public class UpdateScreen extends Screen {
     
     private int updateStatus = -1;
 
+    private String whereFrom="UpdateCheckScreen";
+    
     public UpdateScreen() {
+        this("UpdateCheckScreen");
+    }
+    public UpdateScreen(String whereFrom) {
         super(Component.translatable("gui.sakuraupdater.UpdateScreen"));
+        this.whereFrom = whereFrom;
         CompletableFuture.supplyAsync(() -> {
             // 这里运行在后台线程中
             SakuraUpdaterClient.getInstance().downloadUpdate();
@@ -59,12 +61,16 @@ public class UpdateScreen extends Screen {
             if (updateStatus != 0) {
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.retry",
                         updateStatus), button -> {
-                            Minecraft.getInstance().setScreen(new UpdateCheckScreen());
-                        }).bounds(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
+                            if (whereFrom.equals("UpdateCheckScreen")) {
+                                Minecraft.getInstance().setScreen(new UpdateCheckScreen());
+                            } else if (whereFrom.equals("FixScreen")) {
+                                Minecraft.getInstance().setScreen(new FixScreen());
+                            }
+                        }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
                 this.addRenderableWidget(Button.builder(Component.translatable("gui.sakuraupdater.UpdateScreen.cancel",
                         updateStatus), button -> {
                             Minecraft.getInstance().setScreen(new TitleScreen(true));
-                        }).bounds(this.width / 2 - 100, this.height / 2 + 50, 200, 20).build());
+                        }).bounds(this.width / 2 - 100, this.height / 2 + 80, 200, 20).build());
             } else {
 
                 this.addRenderableWidget(
