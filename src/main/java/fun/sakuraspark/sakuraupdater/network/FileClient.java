@@ -17,8 +17,6 @@ import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.mojang.logging.LogUtils;
-
 import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;
 
 public class FileClient {
@@ -153,11 +151,11 @@ public class FileClient {
                 LOGGER.debug("Download success: {}", fileName);
                 return true;
             } else {
-                LOGGER.error("Download failed: HTTP {}", conn.getResponseCode());
+                LOGGER.error("Download failed:\nHTTP {}: {}", conn.getResponseCode(), conn.getResponseMessage());
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.error("Download failed: {}", fileName, e);
+            LOGGER.error("Download {} failed: {}", fileName, e);
             return false;
         } finally {
             if (conn != null) {

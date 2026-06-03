@@ -51,7 +51,7 @@ public class FileServer {
             httpServer.createContext("/heartbeat", new HeartBeatHandler());
             httpServer.createContext("/updateList", new UpdateListHandler());
             httpServer.createContext("/file", new FileDownloadHandler());
-            httpServer.createContext("/upload", new FileUploadHandler());
+            //httpServer.createContext("/upload", new FileUploadHandler());
             
             // 设置线程池大小
             httpServer.setExecutor(java.util.concurrent.Executors.newFixedThreadPool(10));
@@ -209,6 +209,9 @@ public class FileServer {
                             int bytesRead;
                             while ((bytesRead = fis.read(buffer)) != -1) {
                                 os.write(buffer, 0, bytesRead);
+                            }
+                            if (fileSize == 0) {
+                                os.write(new byte[0]); // 确保空文件也能正确响应
                             }
                         }
                         

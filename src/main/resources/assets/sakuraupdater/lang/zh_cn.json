@@ -15,5 +15,14 @@
   "gui.sakuraupdater.UpdateScreen.retry": "重试",
   "gui.sakuraupdater.UpdateScreen.restartnow": "立即重启以应用更新",
   "gui.sakuraupdater.UpdateScreen.restartlater": "稍后重启",
-  "gui.sakuraupdater.TitleScreen.checkupdate": "检查更新"
+  "gui.sakuraupdater.FixScreen": "校验mods完整性...",
+  "gui.sakuraupdater.FixScreen.retry": "重试",
+  "gui.sakuraupdater.FixScreen.cancel": "取消",
+  "gui.sakuraupdater.FixScreen.fix": "尝试修复",
+  "gui.sakuraupdater.FixScreen.ok": "确定",
+  "gui.sakuraupdater.FixScreen.error": "从服务器验证mods完整性失败",
+  "gui.sakuraupdater.FixScreen.IssuesFound": "发现问题!!!",
+  "gui.sakuraupdater.FixScreen.NoIssues": "未发现问题",
+  "gui.sakuraupdater.TitleScreen.checkupdate": "检查更新",
+  "gui.sakuraupdater.TitleScreen.fix": "Mods修复"
 }

@@ -118,6 +118,7 @@ public class UpdateCheckScreen extends Screen {
         guiGraphics.fill(0, 0, this.width, this.height, 0x20000000);
         
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+
         if (updateStatus == 0) {
             guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2, 16777215);
         } else if (updateStatus == 1 || updateStatus == 3) {

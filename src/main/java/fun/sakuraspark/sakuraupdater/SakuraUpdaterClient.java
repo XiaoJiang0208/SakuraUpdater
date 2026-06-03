@@ -45,7 +45,7 @@ public class SakuraUpdaterClient {
     Pair<List<File>, List<FileData>> integrityCheckResult;
 
     private AtomicBoolean need_show = new AtomicBoolean(true);
-    private boolean debug = false; // 是否开启调试模式
+    private boolean debug = false; // 是否开启调试模式 
 
     SakuraUpdaterClient() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
@@ -70,6 +70,7 @@ public class SakuraUpdaterClient {
     }
 
     public int updateCheck() {
+        last_update_data = null; // 重置上次更新数据，强制重新获取
         if (getLastUpdateData() == null) {
             return -1;
         }

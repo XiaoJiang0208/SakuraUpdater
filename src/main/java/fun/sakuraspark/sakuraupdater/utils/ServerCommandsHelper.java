@@ -4,7 +4,6 @@ import fun.sakuraspark.sakuraupdater.config.DataConfig;
 import fun.sakuraspark.sakuraupdater.config.IGetSyncDirs;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.FileData;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.PathData;
-import fun.sakuraspark.sakuraupdater.config.ServerConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,15 +74,15 @@ public class ServerCommandsHelper {
             dataList.append(path.targetPath)
                     .append(" - ")
                     .append(path.model)
-                    .append(":[");
+                    .append(":[\n");
             for (FileData file : path.files) {
-                dataList.append(" (")
+                dataList.append("    (")
                         .append(file.targetPath)
                         .append(", ")
                         .append(file.sourcePath)
                         .append(", ")
                         .append(file.md5)
-                        .append("), ");
+                        .append(")\n");
             }
             dataList.append("]\n");
         }
@@ -92,7 +91,7 @@ public class ServerCommandsHelper {
 
     // ---- data delete ----
     public static CommandResult deleteData(String version) {
-        if (!DataConfig.removeData(version)) {
+        if (DataConfig.removeData(version)) {
             return CommandResult.success("SakuraUpdater server data deleted!");
         } else {
             return CommandResult.failure("Failed to delete data: Version not found.");
@@ -140,6 +139,7 @@ public class ServerCommandsHelper {
     // ---- 扫描同步目录，生成 PathData 列表 ----
     public static List<PathData> getPathDataList() {
         List<PathData> pathDataList = new ArrayList<>();
+        List<String[]> ignoreList = new ArrayList<>();
         for (String syncDir : IGetSyncDirs.getSyncDirs()) {
             List<String> parts = List.of(syncDir.split(":"));
             if (parts.size() < 2) {
@@ -147,6 +147,15 @@ public class ServerCommandsHelper {
             }
             String targetPath = parts.get(0).trim();
             String model = parts.get(1).trim();
+            if (model.equalsIgnoreCase("ignore")) {
+                parts.stream().skip(2).forEach(ignorePath -> {// 将 ignorePath 添加到 ignoreList 中，格式为 [targetPath, ignorePath]
+                    ignoreList.add(new String[]{targetPath, ignorePath});
+                });
+                continue; // 忽略该路径，跳过后续处理
+            }
+            if (pathDataList.stream().anyMatch(p -> p.targetPath.equals(targetPath))) {
+                continue; // 已经存在相同 targetPath 的 PathData，跳过
+            }
             List<String> sourcePath = parts.size() > 2 ? parts.subList(2, parts.size()) : List.of(targetPath);
             PathData data = new PathData();
             data.model = model;
@@ -164,6 +173,11 @@ public class ServerCommandsHelper {
             }
             pathDataList.add(data);
         }
+        ignoreList.forEach(p -> {
+            pathDataList.stream().filter(other-> other.targetPath.equals(p[0])).forEach(other -> { // 更具正则表达式 p[1] 从 other.files 中移除符合条件的 FileData
+                other.files.removeIf(fileData -> fileData.targetPath.matches(p[1]));
+            });
+        });
         return pathDataList;
     }
 }

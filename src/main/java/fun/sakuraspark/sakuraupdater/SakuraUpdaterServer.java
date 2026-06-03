@@ -183,7 +183,7 @@ public class SakuraUpdaterServer {
                         .suggests(VERSION_SUGGESTIONS)
                         .then(argument("description", greedyString())
                                 .executes(context -> {
-                                    LOGGER.debug("why!");
+                                    //LOGGER.debug("why!");
                                     String version = getString(context, "version");
                                     String description = getString(context, "description");
                                     List<PathData> pathData;

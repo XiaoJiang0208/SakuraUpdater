@@ -4,11 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.LogFactory;
-import org.slf4j.Logger;
-
-import com.mojang.logging.LogUtils;
-
 public class FileUtils {
     public static List<File> getAllFiles(File dir) {
             
