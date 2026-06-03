@@ -1,7 +1,7 @@
-<center>
-<h1>SakuraUpdater</h1>
+<div align="center">
 <img src="img/sakuraupdater.png" width="128" alt="SakuraUpdater">
-</center>
+<h1>SakuraUpdater</h1>
+</div>
 
 *([中文版请向下滚动 | Scroll down for Chinese version](#sakuraupdater-中文))*
 ## Introduction
@@ -9,9 +9,9 @@
 
 SakuraUpdater is a NeoForge Minecraft mod that enables automatic synchronization of mod files between a server and clients, allowing players to receive server updates automatically, similar to other games.
 
-<center>
+<div align="center">
 <img src="img/image1.png" width="500" alt="SakuraUpdater">
-</center>
+</div>
 
 ## Features
 
@@ -126,9 +126,9 @@ When a player joins the game, the client will automatically check whether the se
 
 SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器的 mod 文件，让玩家能够像其他游戏一样自动获取服务器更新。
 
-<center>
+<div align="center">
 <img src="img/image2.png" width="500" alt="SakuraUpdater">
-</center>
+</div>
 
 ## 功能特性
 
