@@ -24,7 +24,6 @@ public class SakuraUpdater {
 
     public SakuraUpdater(IEventBus modEventBus, FMLModContainer modContainer) {
         // LOGGER.info("Is debug enabled? {}", LOGGER.isDebugEnabled());
-        // LOGGER.debug("iiiiiiiiiiiiiiiiii");
         // Register the commonSetup method for modloading
         // modEventBus.addListener(this::commonSetup);
 
