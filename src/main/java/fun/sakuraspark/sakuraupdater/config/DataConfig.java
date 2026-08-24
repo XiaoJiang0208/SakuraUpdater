@@ -234,6 +234,43 @@ public class DataConfig {
     }
 
     /**
+     * 获取晚于指定版本的所有数据记录（按时间升序），不含指定版本本身。
+     * 如果 version 为 null 或空，则返回全部记录。
+     * @param version 起始版本号（不含），可为 null 表示从最早开始
+     * @return 数据记录列表，出错则返回 null
+     */
+    @Nullable
+    public static List<Data> getDataAfter(String version) {
+        List<Data> datas = new java.util.ArrayList<>();
+        String sql;
+        if (version == null || version.isEmpty()) {
+            sql = "SELECT version, time, description, data FROM updates ORDER BY time ASC";
+        } else {
+            sql = "SELECT version, time, description, data FROM updates WHERE time > (SELECT time FROM updates WHERE version = ?) ORDER BY time ASC";
+        }
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            if (version != null && !version.isEmpty()) {
+                pstmt.setString(1, version);
+            }
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Data data = new Data();
+                    data.version = rs.getString("version");
+                    data.time = rs.getString("time");
+                    data.description = rs.getString("description");
+                    String dataJson = rs.getString("data");
+                    Gson gson = new Gson();
+                    data.paths = gson.fromJson(dataJson, new com.google.gson.reflect.TypeToken<List<PathData>>(){}.getType());
+                    datas.add(data);
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return datas;
+    }
+
+    /**
      * 获取最新版本号
      * @return 最新的版本号字符串，找不到则返回null
      */
