@@ -103,7 +103,7 @@ public class UpdateCheckScreen extends Screen {
         }
         if (updateStatus == 1 || updateStatus == 3) {
             this.addRenderableWidget(new MarkdownBox(this.width / 2 - 125, this.height / 2 - 70, 250, 140,
-                    SakuraUpdaterClient.getInstance().getLastUpdateData().description));
+                    SakuraUpdaterClient.getInstance().getChangeLogText()));
         }
     }
 

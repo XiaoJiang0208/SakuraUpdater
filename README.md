@@ -1,7 +1,7 @@
-<center>
-<h1>SakuraUpdater</h1>
+<div align="center">
 <img src="img/sakuraupdater.png" width="128" alt="SakuraUpdater">
-</center>
+<h1>SakuraUpdater</h1>
+</div>
 
 *([中文版请向下滚动 | Scroll down for Chinese version](#sakuraupdater-中文))*
 ## Introduction
@@ -9,9 +9,9 @@
 
 SakuraUpdater is a NeoForge Minecraft mod that enables automatic synchronization of mod files between a server and clients, allowing players to receive server updates automatically, similar to other games.
 
-<center>
+<div align="center">
 <img src="img/image1.png" width="500" alt="SakuraUpdater">
-</center>
+</div>
 
 ## Features
 
@@ -38,8 +38,8 @@ SakuraUpdater is a NeoForge Minecraft mod that enables automatic synchronization
 
 ### Server-side independent operation
 
-1. Place `sakuraupdater-[version]-standalone.jar` into a separate folder.
-2. Run the server independently with `java -jar sakuraupdater-[version]-standalone.jar`.
+1. Place `sakuraupdater-[version].jar` into a separate folder.
+2. Run the server independently with `java -jar sakuraupdater-[version].jar`.
 3. Edit the client configuration file at `sakuraupdater-client.toml`.
 
 ## Configuration
@@ -126,9 +126,9 @@ When a player joins the game, the client will automatically check whether the se
 
 SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器的 mod 文件，让玩家能够像其他游戏一样自动获取服务器更新。
 
-<center>
+<div align="center">
 <img src="img/image2.png" width="500" alt="SakuraUpdater">
-</center>
+</div>
 
 ## 功能特性
 
@@ -155,8 +155,8 @@ SakuraUpdater 是一个 Minecraft NeoForge 模组，用于自动更新服务器�
 
 ### 服务端独立运行
 
-1. 将 `sakuraupdater-[version]-standalone.jar` 放入单独文件夹。
-2. 直接 `java -jar sakuraupdater-[version]-standalone.jar` 即可运行服务端。
+1. 将 `sakuraupdater-[version].jar` 放入单独文件夹。
+2. 直接 `java -jar sakuraupdater-[version].jar` 即可运行服务端。
 3. 编辑 `sakuraupdater-client.toml` 配置文件。
 
 ## 配置说明

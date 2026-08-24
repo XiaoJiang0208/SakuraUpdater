@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import fun.sakuraspark.sakuraupdater.config.DataConfig.Data;
 
 public class FileClient {
@@ -107,6 +109,57 @@ public class FileClient {
         }
     }
     
+    /**
+     * 获取更新日志：晚于指定版本的所有版本记录（按时间升序）。
+     * version 为 null 或空时返回全部记录。
+     */
+    @Nullable
+    public List<Data> getChangeLog(String version) {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(baseUrl + "/changelog");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json;charset=utf-8");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+
+            // 构建请求JSON
+            JsonObject requestJson = new JsonObject();
+            if (version != null && !version.isEmpty()) {
+                requestJson.addProperty("version", version);
+            }
+
+            String requestBody = new Gson().toJson(requestJson);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(requestBody.getBytes(StandardCharsets.UTF_8));
+            }
+
+            if (conn.getResponseCode() == 200) {
+                String response = readInputStream(conn.getInputStream());
+                Gson gson = new Gson();
+                try {
+                    List<Data> dataList = gson.fromJson(response, new TypeToken<List<Data>>(){}.getType());
+                    LOGGER.debug("Got changelog for version: {}", version);
+                    return dataList;
+                } catch (JsonSyntaxException e) {
+                    LOGGER.error("Cannot parse changelog JSON", e);
+                    return null;
+                }
+            } else {
+                LOGGER.error("Failed to get changelog: HTTP {}", conn.getResponseCode());
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to get changelog", e);
+            return null;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
     /**
      * 下载文件
      */
