@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -50,6 +51,7 @@ public class FileServer {
             // 创建不同的处理器
             httpServer.createContext("/heartbeat", new HeartBeatHandler());
             httpServer.createContext("/updateList", new UpdateListHandler());
+            httpServer.createContext("/changelog", new ChangelogHandler());
             httpServer.createContext("/file", new FileDownloadHandler());
             //httpServer.createContext("/upload", new FileUploadHandler());
             
@@ -141,6 +143,46 @@ public class FileServer {
                     LOGGER.debug("Sent update list for version: {}", version);
                 } catch (Exception e) {
                     LOGGER.error("Error processing update list request", e);
+                    sendError(exchange, 400, "Invalid request format");
+                }
+            } else {
+                sendError(exchange, 405, "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * 更新日志处理器：返回晚于客户端当前版本的所有版本记录（按时间升序）
+     */
+    private class ChangelogHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String requestBody = readRequestBody(exchange);
+                    JsonObject jsonRequest = JsonParser.parseString(requestBody).getAsJsonObject();
+                    String version = jsonRequest.has("version") ? jsonRequest.get("version").getAsString() : null;
+
+                    List<Data> changelog = DataConfig.getDataAfter(version);
+
+                    String response;
+                    if (changelog == null) {
+                        response = "[]";
+                    } else {
+                        response = new Gson().toJson(changelog);
+                    }
+
+                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json;charset=utf-8");
+                    exchange.sendResponseHeaders(200, responseBytes.length);
+
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(responseBytes);
+                    }
+
+                    LOGGER.debug("Sent changelog for version: {}", version);
+                } catch (Exception e) {
+                    LOGGER.error("Error processing changelog request", e);
                     sendError(exchange, 400, "Invalid request format");
                 }
             } else {

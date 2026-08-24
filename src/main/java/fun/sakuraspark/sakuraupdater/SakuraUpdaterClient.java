@@ -39,6 +39,7 @@ public class SakuraUpdaterClient {
     private FileClient file_client;
     private Data last_update_data = null; // 上次更新的数据
     private Data current_update_data = null; // 当前更新的数据，只有存在push时才会有
+    private List<Data> changelog = null; // 更新日志（从当前版本到最新版本）
 
     private Pair<Integer, Integer> update_progress = new Pair<>(-1, -1); // 更新进度
     private int download_failures = -1; // 更新失败次数
@@ -69,8 +70,44 @@ public class SakuraUpdaterClient {
         return last_update_data;
     }
 
+    /**
+     * 获取从当前版本到最新版本的所有更新日志（按时间升序）
+     */
+    public List<Data> getChangeLog() {
+        if (changelog == null) {
+            changelog = file_client.getChangeLog(ClientConfig.getNowVersion());
+            if (changelog == null) {
+                LOGGER.error("Failed to fetch changelog from server.");
+                return null;
+            }
+        }
+        return changelog;
+    }
+
+    /**
+     * 获取聚合后的更新日志文本（Markdown格式），每个版本用 ## 标题开头
+     */
+    public String getChangeLogText() {
+        List<Data> logs = getChangeLog();
+        if (logs == null || logs.isEmpty()) {
+            Data last = getLastUpdateData();
+            return last != null ? last.description : "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < logs.size(); i++) {
+            Data data = logs.get(i);
+            if (i > 0) {
+                sb.append("\n\n");
+            }
+            sb.append("## ").append(data.version).append("\n");
+            sb.append(data.description);
+        }
+        return sb.toString();
+    }
+
     public int updateCheck() {
         last_update_data = null; // 重置上次更新数据，强制重新获取
+        changelog = null; // 重置更新日志，强制重新获取
         if (getLastUpdateData() == null) {
             return -1;
         }
