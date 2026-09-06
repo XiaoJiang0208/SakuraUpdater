@@ -27,6 +27,7 @@ public class TitleScreenMixin extends net.minecraft.client.gui.screens.Screen {
     private Button updateCheckButton;
     private Button fixButton;
     private ImageWidget logoWidget;
+    private static boolean warnedMissingInit = false;
 
     // 在菜单添加一个按钮，点击后打开更新界面
     @Inject(method = "init", at = @At("TAIL"))
@@ -49,6 +50,15 @@ public class TitleScreenMixin extends net.minecraft.client.gui.screens.Screen {
     // 添加按钮隐藏逻辑
     @Inject(method = "tick", at = @At("TAIL"))
     private void sakuraUpdater$addUpdateButtonMoveLogic(CallbackInfo ci) {
+        // 防御:某些情况下(如资源重载/其它mod或connector在init前切换/重建TitleScreen)tick会在init之前触发，
+        // 此时控件字段仍为null,直接解引用会导致NPE崩溃。字段未初始化则跳过本次移动逻辑。
+        if (this.logoWidget == null || this.updateCheckButton == null || this.fixButton == null) {
+            if (!warnedMissingInit) {
+                warnedMissingInit = true;
+                LOGGER.warn("SakuraUpdater: TitleScreen ticked before init mixin ran; fields not ready, skipping move logic.");
+            }
+            return;
+        }
         if (this.logoWidget.isHovered() || this.updateCheckButton.isHovered() || this.fixButton.isHovered()) {
             this.updateCheckButton.setX(0);
             this.fixButton.setX(0);
