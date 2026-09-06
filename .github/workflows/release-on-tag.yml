@@ -40,17 +40,31 @@ jobs:
           ls -la build/libs || true
           ls -la build/devlibs || true
 
-      - name: Get tag commit message
+      - name: Get tag message
         id: get_msg
         run: |
-          # 获取 tag 指向的提交 SHA
-          sha=$(git rev-list -n 1 "${GITHUB_REF}")
-          echo "sha=$sha" >> $GITHUB_OUTPUT
-          # 获取该提交的提交信息（多行安全写入输出）
-          msg=$(git show -s --format=%B "$sha" || true)
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$msg" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          tag="${GITHUB_REF_NAME}"
+
+          # 确保拿到完整 tag 对象（annotated tag 需要）
+          git fetch origin "refs/tags/${tag}:refs/tags/${tag}" --force || true
+
+          msg=""
+          # 有 tag 对象 = annotated tag，可读说明
+          if git rev-parse "${tag}^{tag}" >/dev/null 2>&1; then
+            msg=$(git tag -l --format='%(contents)' "${tag}" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+          fi
+
+          # 轻量 tag 或说明为空，回退到该 tag 指向的 commit
+          if [ -z "$(echo "$msg" | tr -d '[:space:]')" ]; then
+            sha=$(git rev-list -n 1 "${tag}")
+            msg=$(git show -s --format=%B "$sha" || true)
+          fi
+
+          {
+            echo "body<<EOF"
+            printf '%s\n' "$msg"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_REF: ${{ github.ref }}
 
